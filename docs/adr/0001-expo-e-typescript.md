@@ -24,6 +24,8 @@ O dono do produto decidiu: **Expo (React Native), TypeScript**.
 6. **Navegação** por `expo-router` (rotas por arquivo), que também resolve o *deep link* `porecatu://pair`.
 7. **Estado**: um *store* por desktop conectado, fora da árvore de componentes ([arquitetura](../arquitetura.md) §2). A escolha da biblioteca (Zustand ou equivalente mínimo) fica para o M1, sem ADR, desde que respeite essa forma.
 
+   > **Nota de implementação (2026-11-16):** a biblioteca é o `zustand` 5.1.0 na forma *vanilla* (`zustand/vanilla`, sem hook de React), um store por desktop aberto em `src/session/sessionStore.ts`, criado e descartado pelo registro de `src/session/registry.ts`. Além dos módulos do item 3, o `package.json` declara `expo-crypto` (aleatoriedade, [ADR-0004](0004-criptografia-em-js-puro.md)), `expo-localization` (idioma do sistema), `expo-clipboard`, `expo-device` e `expo-constants`. Sem telas, o código ainda só usa `expo-secure-store`, `expo-local-authentication`, `expo-crypto`, `expo-localization` e `expo-router`; câmera, captura de tela, vibração, área de transferência e modelo do aparelho entram com as telas.
+
 ## Alternativas consideradas
 
 - **Nativo (Kotlin + Swift).** Melhor acesso a cada plataforma e o teclado mais controlável. Rejeitado: dois apps e duas implementações do protocolo, para um mantenedor.

@@ -9,7 +9,7 @@ Com o Porecatu Remote você:
 - digita na aba, com uma barra de teclas especiais (`Ctrl`, `Alt`, `Esc`, `Tab`, setas, `F1`–`F12`);
 - cria e fecha abas, renomeia, move entre grupos e entre janelas, cria e organiza grupos.
 
-> **Estado:** só documentação. Nenhum código existe ainda. O caminho até a primeira versão está no [roadmap](docs/roadmap.md).
+> **Estado:** em desenvolvimento, **ainda sem telas**. A camada de lógica está implementada e testada em Node (conexão e reconexão, pareamento, armazenamento seguro, bloqueio do app, árvore do workspace, modelo da grade, input, ações sobre abas e o catálogo `en_US`/`pt_BR`), com um desktop falso para desenvolvimento (`pnpm fake-host`). As telas aguardam o aval visual da [proposta de anatomia](docs/design/proposta-de-anatomia.md), e o render da grade, o spike do [ADR-0002](docs/adr/0002-render-da-grade-com-skia.md). Nada foi rodado num aparelho ainda. O caminho até a primeira versão, e o que falta verificar, está no [roadmap](docs/roadmap.md); o que entrou, no [CHANGELOG](CHANGELOG.md).
 
 ## Como funciona
 
@@ -27,12 +27,24 @@ Porecatu desktop  <-- wss -->  Porecatu Relay  <-- wss -->  Porecatu Remote
 
 O protocolo entre as partes está especificado no repositório [porecatu/protocol](https://github.com/porecatu/protocol).
 
+## Desenvolvimento
+
+Node 26.13.0 (`.nvmrc`) e pnpm 12.17.0:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm check        # typecheck, lint e testes
+pnpm fake-host    # relay e desktop falsos em Node, com o QR de pareamento no terminal
+```
+
+O app roda só em *development build* (nunca no Expo Go); os comandos completos estão no [CLAUDE.md](CLAUDE.md).
+
 ## Documentação
 
 - [Visão de produto](docs/prd/prd-000-visao-de-produto.md) e os demais [PRDs](docs/prd/)
 - [Arquitetura](docs/arquitetura.md)
 - [Decisões arquiteturais (ADRs)](docs/adr/0000-template.md)
-- [Roadmap](docs/roadmap.md)
+- [Roadmap](docs/roadmap.md) e [CHANGELOG](CHANGELOG.md)
 - [Design](docs/design/README.md)
 - [Guia operacional para quem mexe no código](CLAUDE.md)
 

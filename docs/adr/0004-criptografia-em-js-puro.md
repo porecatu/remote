@@ -12,7 +12,11 @@ O app poderia reimplementar partes (é tentador escrever "só o CBOR" ou "só o 
 
 ## Decisão
 
-**O app usa o pacote `@porecatu/protocol`, em versão exata, para tudo que é do fio — envelope, Noise, registros, CBOR e tipos das mensagens — e esse pacote é JavaScript puro: `@noble/curves`, `@noble/ciphers` e `@noble/hashes` para X25519, ChaCha20-Poly1305 e BLAKE2s, e `cbor-x` para CBOR. O app não tem módulo nativo próprio.**
+**O app usa o pacote `@porecatu/protocol`, em versão exata, para tudo que é do fio — envelope, Noise, registros, CBOR e tipos das mensagens — e esse pacote é JavaScript puro: `@noble/curves`, `@noble/ciphers` e `@noble/hashes` para X25519, ChaCha20-Poly1305 e BLAKE2s, e um codificador CBOR determinístico do próprio pacote. O app não tem módulo nativo próprio.**
+
+> **Correção factual (2026-11-16):** a primeira redação citava o `cbor-x` para CBOR. O `@porecatu/protocol` 0.1.0 adotado pelo app não depende do `cbor-x`: as únicas dependências de execução são `@noble/ciphers`, `@noble/curves` e `@noble/hashes` (2.4.0), e o CBOR é do próprio pacote. A decisão (JS puro, nada de codificação no app) não muda.
+>
+> **Nota de implementação (2026-11-16):** enquanto o pacote não está publicado, ele vem do tarball `vendor/porecatu-protocol-0.1.0.tgz`, gerado no repositório do protocolo, como dependência `file:`; passa a dependência publicada (ou git) quando o pacote sair. `src/protocol/index.ts` é o único ponto de re-export do pacote no app, e `src/protocol/testing.ts` re-exporta o kit de teste dele (relay em memória, chaves de teste). O polyfill do item 3 está em `src/polyfills.ts`, importado primeiro por `app/_layout.tsx`, que chama `assertSecureRandom()` no arranque.
 
 1. **Nenhuma codificação ou criptografia escrita no app.** O app chama o cliente do pacote (conectar, parear, mandar, receber) e trata mensagens tipadas.
 2. **JS puro** porque roda igual no Hermes dos dois sistemas, no Node dos testes e no CI, sem *prebuild* nem compilação nativa, e porque as bibliotecas `@noble` são auditadas e sem dependências.

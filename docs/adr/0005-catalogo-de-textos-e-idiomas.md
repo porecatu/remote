@@ -18,6 +18,8 @@ No app a regra é ainda mais necessária, porque o protocolo **não manda prosa*
 2. **Identificadores tipados**: as chaves do `en_US` geram o tipo das chaves; um teste reprova chave que falta em qualquer idioma e chave sobrando.
 3. **Idioma** segue o do sistema quando existe no catálogo, senão `en_US`; o usuário pode escolher nas configurações do app.
 4. **Plural e interpolação** pela API `Intl.PluralRules` (disponível no Hermes) e por marcadores nomeados (`{count}`), nunca concatenação.
+
+   > **Revisão (2026-11-16, na implementação):** o plural **não** usa `Intl.PluralRules`. O suporte do Hermes a `Intl` não é garantido em todas as versões e plataformas, e os dois idiomas do catálogo só precisam das categorias `one` e `other`; as regras estão escritas à mão em `src/i18n/plural.ts`: em `en_US`, `one` só para n = 1; em `pt_BR`, `one` quando a parte inteira é 0 ou 1 (regra `i = 0..1` do CLDR). As chaves de plural são pares `<base>.one`/`<base>.other` no catálogo. A interpolação por marcadores nomeados (`{count}`) segue como escrito.
 5. **Mapa completo de códigos**: cada valor de `error-code`, `goodbye-reason`, `pair-rejected.reason`, `close-reason` e dos estados de painel tem uma mensagem; um teste percorre os enums do `@porecatu/protocol` e reprova valor sem mensagem.
 6. **Terminologia**: "abas", nunca "guias", em `pt_BR` — com teste, como no Porecatu.
 7. **Teste de prosa no código**: o lint reprova literal de texto em JSX fora do catálogo.

@@ -46,6 +46,9 @@ Antes de qualquer coisa, o celular precisa saber **qual desktop** acessar, **por
 - **RF-1.17** O app tem **bloqueio por biometria** (ou pelo código do aparelho, quando não há biometria), **ligado por padrão**. Ao abrir o app e ao voltar do segundo plano depois de 1 minuto, o app pede o desbloqueio antes de mostrar qualquer desktop.
 - **RF-1.18** O bloqueio pode ser desligado nas configurações do app, com o desbloqueio exigido para desligar.
 - **RF-1.19** Enquanto o app está no seletor de apps do sistema, a tela fica **coberta** (nada de grade na miniatura); no Android, a tela do terminal usa `FLAG_SECURE`.
+- **RF-1.20** **Aparelho sem senha nem biometria**: com o bloqueio ligado e um aparelho que não consegue autenticar (nenhuma biometria e nenhum código de bloqueio configurado), o app abre **sem bloqueio** e mostra um **aviso permanente** de que não pode ser bloqueado, até o usuário configurar um bloqueio no sistema. Nesse estado, desligar o bloqueio nas configurações não pede autenticação (não há o que pedir).
+
+  > **Decidido pelo dono em 2026-11-16.** O app nunca tranca o usuário fora do próprio app. Implementado na máquina de estados `src/security/appLock.ts` (estado `unavailable`, `hasPersistentWarning`); o texto do aviso é a chave `app_lock.unavailable_warning` do catálogo.
 
 **Por que ligado por padrão:** o [modelo de ameaça](https://github.com/porecatu/protocol/blob/main/docs/especificacao/modelo-de-ameaca.md) aceita que um celular desbloqueado nas mãos erradas tem acesso total ao desktop até a revogação, e não há permissão por aparelho no v1. O app é, na prática, uma chave para executar comandos no computador do usuário: a fricção de um toque de biometria é pequena perto disso. Quem não quer, desliga.
 

@@ -6,7 +6,12 @@ Guia operacional do projeto. Leia antes de mexer em qualquer coisa.
 
 **Porecatu Remote** — app mobile (Android e iOS), em Expo/React Native e TypeScript, que se conecta a um [Porecatu](https://github.com/porecatu/terminal) desktop através de um [Porecatu Relay](https://github.com/porecatu/relay) auto-hospedado, para ver e controlar a sessão viva do desktop: workspace (janelas, grupos, fixadas, abas, painéis), grade do terminal, input e gestão de abas.
 
-**Estado:** **só documentação** (M0 do [roadmap](docs/roadmap.md)). Nenhum código, nenhum `package.json`. O primeiro código é o spike do M1, que decide o [ADR-0002](docs/adr/0002-render-da-grade-com-skia.md).
+**Estado (2026-11-16):** **só a camada de lógica, nenhuma tela** — decisão do dono para a implementação inicial. Expo SDK 58, TypeScript 6.0.3, `zustand` *vanilla*, testes com `jest-expo`: `pnpm test` roda **651 testes em 39 suítes**, todos verdes, em Node. O `@porecatu/protocol` 0.1.0 vem de `vendor/porecatu-protocol-0.1.0.tgz` (tarball gerado no repositório do protocolo; vira dependência publicada depois). O mapa de módulos está na [arquitetura §1](docs/arquitetura.md); o que entrou, no [CHANGELOG](CHANGELOG.md).
+
+- **Implementado e verificado só por teste automatizado em Node:** conexão (socket do relay, ciclo da sessão, reconexão, presença), store por desktop e registro, pareamento e *deep link*, armazenamento seguro, identidade, lista de desktops e configurações, bloqueio do app, seletores e busca da árvore, expansão local de grupos, modelo da grade, scrollback, resolução de cor, input (modificadores, barra, colar, envio), as 13 ações, pedidos pendentes e confirmações, catálogo `en_US`/`pt_BR`, logger. E o desktop falso `tools/fake-host/` (`pnpm fake-host`).
+- **Dívida de verificação** (detalhe no [roadmap](docs/roadmap.md)): telas; protótipo de render com Skia em aparelho (o [ADR-0002](docs/adr/0002-render-da-grade-com-skia.md) segue Proposto); app em aparelho real contra o desktop falso; *development build*, build EAS e lojas; módulos nativos de verdade (testados só por trás de interfaces injetadas); a ligação de `SubscriptionSet`, `InputSender`, pareamento, presença e bloqueio ao store de sessão, que entra com as telas.
+- A [proposta de anatomia](docs/design/proposta-de-anatomia.md) das telas **aguarda o aval visual do dono**: nenhuma tela é implementada e nenhum valor dela vale até a aprovação.
+- **Provisórios** em `app.config.ts`: o identificador `br.com.porecatu.remote` e os textos das permissões nativas.
 
 ## O contrato vem de fora
 
@@ -39,7 +44,9 @@ Cada item tem ADR em [docs/adr/](docs/adr/0000-template.md). Não troque nenhum 
 | Linguagem | **TypeScript** em modo `strict`, sem `any` implícito | [0001](docs/adr/0001-expo-e-typescript.md) |
 | Render da grade | `@shopify/react-native-skia` — **Proposto**, pendente do spike | [0002](docs/adr/0002-render-da-grade-com-skia.md) |
 | Chaves | `expo-secure-store` (Keychain no iOS, Keystore no Android) | [0003](docs/adr/0003-chaves-no-armazenamento-seguro.md) |
-| Protocolo e cripto | `@porecatu/protocol`, que usa `@noble/*` e `cbor-x` — **JS puro, nenhum módulo nativo próprio** | [0004](docs/adr/0004-criptografia-em-js-puro.md) |
+| Protocolo e cripto | `@porecatu/protocol`, que usa `@noble/*` e um codificador CBOR próprio — **JS puro, nenhum módulo nativo próprio** | [0004](docs/adr/0004-criptografia-em-js-puro.md) |
+| Estado | `zustand` na forma *vanilla* (`zustand/vanilla`), um store por desktop aberto, fora do React | [0001](docs/adr/0001-expo-e-typescript.md) item 7 |
+| Aleatoriedade | `crypto.getRandomValues` de `expo-crypto`, instalado em `src/polyfills.ts` antes de qualquer import do protocolo; nunca `Math.random` (o lint reprova) | [0004](docs/adr/0004-criptografia-em-js-puro.md) |
 | Leitura do QR | `expo-camera` (leitor de código de barras embutido) e *deep link* `porecatu://` | [0001](docs/adr/0001-expo-e-typescript.md) |
 | Textos | Catálogo de mensagens próprio, `en_US` padrão e `pt_BR` | [0005](docs/adr/0005-catalogo-de-textos-e-idiomas.md) |
 | Licença | GPL-3.0-or-later com DCO | [0006](docs/adr/0006-licenca-gpl-e-lojas.md) |
@@ -55,7 +62,22 @@ python scripts/verify-docs.py
 
 No Windows, se `python` abrir a Microsoft Store, use `%LOCALAPPDATA%\Programs\Python\Python312\python.exe`.
 
-Código (quando existir, M1): lint, `tsc --noEmit`, testes unitários e os vetores do protocolo. Os comandos exatos entram aqui no PR que criar o `package.json`.
+Código (Node 26.13.0 por `.nvmrc`, pnpm 12.17.0 por `packageManager`):
+
+```bash
+pnpm install --frozen-lockfile        # instalação reproduzível (CI)
+pnpm typecheck                        # tsc --noEmit
+pnpm lint                             # eslint .
+pnpm test                             # jest (jest-expo)
+pnpm check                            # typecheck + lint + test
+pnpm start                            # expo start --dev-client (exige development build)
+pnpm exec expo config --type public   # confere a configuração do app
+pnpm fake-host                        # relay + desktop falsos em Node (ws://localhost:8787), URI e QR no terminal
+python scripts/check-spdx.py          # cabeçalho SPDX em todo arquivo (CI)
+node scripts/check-licenses.mjs       # licenças das dependências de produção (CI)
+```
+
+O `pnpm fake-host` aceita `--port`, `--relay-url`, `--seed`, `--strict`, `--decline-pairing` e `--no-qr`, e lê `p` (novo pareamento), `b` (campainha) e `q` (sair) da entrada padrão; num Android, use `adb reverse tcp:8787 tcp:8787` (o app só aceita `ws://` para loopback). Os vetores do protocolo **não** rodam aqui: são testados no repositório do protocolo. Duas particularidades do pnpm 12: a configuração (`nodeLinker: hoisted`, `allowBuilds`) mora em `pnpm-workspace.yaml`, não no `.npmrc`; e script de instalação de dependência é bloqueado até ser decidido em `allowBuilds`.
 
 ## Convenções
 
@@ -91,7 +113,7 @@ Correção de erro factual ou de clareza é permitida; mudança de decisão, nã
 
 ## Aparência
 
-- **Nenhuma tela sem aval visual do dono do produto.** Não há especificação visual ainda ([docs/design/](docs/design/README.md)).
+- **Nenhuma tela sem aval visual do dono do produto.** Não há especificação visual aprovada: a [proposta de anatomia](docs/design/proposta-de-anatomia.md) **aguarda o aval** ([docs/design/](docs/design/README.md)). Até lá, `app/` só tem o `_layout.tsx` sem conteúdo visual.
 - **A grade usa o tema do desktop** (mensagem `theme`): fundo, frente, cursor, seleção, as 16 cores e a paleta de grupos vêm de lá. O app não inventa paleta de terminal.
 - Nenhuma cor, dimensão ou espaçamento do chrome do app é inventado no código: sai de tokens definidos em `docs/design/` quando eles existirem.
 
@@ -101,7 +123,9 @@ Correção de erro factual ou de clareza é permitida; mudança de decisão, nã
 - **Chave privada só no armazenamento seguro** ([ADR-0003](docs/adr/0003-chaves-no-armazenamento-seguro.md)): nunca em `AsyncStorage`, em arquivo, em estado global serializável nem em relatório de crash.
 - **Render da grade não recria texto por célula por quadro.** O modelo guarda linhas já agrupadas em spans; o render reaproveita o que não mudou e só redesenha as linhas que o `grid-diff` tocou. Medir sempre com grade grande (200×60) em Android intermediário.
 - **Ack de grade é obrigatório.** Sem `grid-ack`, o desktop para de mandar a grade daquela assinatura depois de duas mensagens ([mensagens §5.4](https://github.com/porecatu/protocol/blob/main/docs/especificacao/03-mensagens.md)). Confirmar **depois** de aplicar, não ao receber.
-- **Snapshot pode chegar a qualquer momento** (o desktop redimensionou, entrou na tela alternativa): o modelo da grade aceita `grid-snapshot` no meio de uma sequência de diffs e reinicia o `seq`.
+- **Snapshot pode chegar a qualquer momento** (o desktop redimensionou, entrou na tela alternativa): o modelo da grade aceita `grid-snapshot` no meio de uma sequência de diffs. O `seq` **não** reinicia: snapshots e diffs dividem a mesma sequência da assinatura, e o próximo diff tem de ser o `seq` do snapshot + 1.
+- **`seq` fora de sequência é erro de protocolo**, não dessincronia ([mensagens §5.3](https://github.com/porecatu/protocol/blob/main/docs/especificacao/03-mensagens.md)): o app manda `error { protocol }` e a sessão fecha, sem assinar de novo para "consertar" (`src/session/subscription.ts`).
+- **Plural sem `Intl.PluralRules`**: o Hermes não garante `Intl`; as regras estão escritas à mão em `src/i18n/plural.ts` (en: `one` só para 1; pt: `one` para parte inteira 0 ou 1).
 - **`max_subscriptions` vem do `welcome`**, não é constante do app.
 - **Coluna de caractere sem segmentar grafemas**: o *i*-ésimo code point de um span comum está em `col + i × width`; grafema de vários code points vem sozinho num span. O Hermes não tem `Intl.Segmenter` confiável — não dependa dele.
 - **Ids do protocolo reiniciam quando o Porecatu reinicia.** Nunca persistir `tab-id`/`pane-id` entre sessões como se fossem estáveis.
@@ -110,7 +134,8 @@ Correção de erro factual ou de clareza é permitida; mudança de decisão, nã
 ## Índice
 
 - [docs/prd/](docs/prd/prd-000-visao-de-produto.md) — requisitos de produto (000 a 004)
-- [docs/arquitetura.md](docs/arquitetura.md) — camadas, modelo de estado, threads, telas
+- [docs/arquitetura.md](docs/arquitetura.md) — camadas, mapa de módulos, modelo de estado, threads, telas
 - [docs/adr/](docs/adr/0000-template.md) — decisões arquiteturais
 - [docs/roadmap.md](docs/roadmap.md) — marcos e dívida de verificação
-- [docs/design/](docs/design/README.md) — registro visual (vazio por ora)
+- [CHANGELOG.md](CHANGELOG.md) — o que entrou
+- [docs/design/](docs/design/README.md) — registro visual; a [proposta de anatomia](docs/design/proposta-de-anatomia.md) aguarda aval

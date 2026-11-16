@@ -15,13 +15,17 @@ O [modelo de ameaça](https://github.com/porecatu/protocol/blob/main/docs/especi
 
 ## Decisão
 
-**A chave privada do aparelho e a lista de desktops moram no `expo-secure-store`, que usa o Keychain no iOS e o Keystore (com `EncryptedSharedPreferences`) no Android, com acessibilidade "só depois do primeiro desbloqueio, só neste aparelho". Nada disso vai para `AsyncStorage`, arquivo comum, backup ou estado serializável.**
+**A chave privada do aparelho e a lista de desktops moram no `expo-secure-store`, que usa o Keychain no iOS e o Keystore no Android (o valor é cifrado com AES-GCM por uma chave guardada no Android Keystore, e o texto cifrado fica nas `SharedPreferences` privadas do app), com acessibilidade "só depois do primeiro desbloqueio, só neste aparelho". Nada disso vai para `AsyncStorage`, arquivo comum, backup ou estado serializável.**
+
+> **Correção factual (2026-11-16):** a primeira redação dizia "Keystore (com `EncryptedSharedPreferences`)". O `expo-secure-store` 58.0.3 não usa `EncryptedSharedPreferences`: cifra cada valor com uma chave AES do Android Keystore (`AESEncryptor`) e grava o resultado em `SharedPreferences` comuns do app. A proteção continua sendo a do Keystore; a decisão não muda.
 
 1. **Chave privada**: um item, `device.static_key`, com `keychainAccessible: AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY` (fica fora do backup do iCloud e não migra para outro aparelho). Lida para a memória só durante a sessão e nunca colocada em *store* de estado, log ou relatório de crash.
 2. **Lista de desktops**: um item, `desktops.v1`, com um JSON pequeno (o limite prático do Secure Store no Android é de alguns KB por item; dez desktops cabem com folga). Versão no nome do item para migração.
 3. **Sem backup do sistema**: `allowBackup="false"` no Android e os itens com `THIS_DEVICE_ONLY` no iOS. Trocar de celular é **parear de novo** — é o comportamento certo para uma chave de acesso.
 4. **Exigência de biometria no item: não.** O bloqueio por biometria do [PRD-001](../prd/prd-001-desktops-e-pareamento.md) RF-1.17 é do **app** (`expo-local-authentication`), não do item do Keychain: exigir biometria por leitura quebraria a reconexão automática ao voltar do segundo plano. A proteção do item é o bloqueio do aparelho.
 5. **Recriar identidade** apaga os dois itens.
+
+> **Nota de implementação (2026-11-16):** o código guarda um **terceiro** item no mesmo armazenamento e com a mesma acessibilidade: `settings.v1`, as configurações do app (idioma, bloqueio, vibração da campainha), para que nada persistente do app fique fora do Secure Store. O conjunto de itens é fechado no tipo `SecureStoreKey` de `src/storage/secureStore.ts` (`device.static_key`, `desktops.v1`, `settings.v1`), e a lista de desktops tem teto de 20 entradas (`MAX_DESKTOPS` em `src/storage/desktopList.ts`). `android.allowBackup = false` está em `app.config.ts`.
 
 ## Alternativas consideradas
 

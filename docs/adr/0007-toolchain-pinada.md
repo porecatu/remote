@@ -22,6 +22,14 @@ O app também depende do `@porecatu/protocol`, cuja versão tem de casar com a d
 6. **Dependabot** (ou Renovate) abre PRs de atualização, um por dependência, com o CI completo; nada é atualizado em lote sem revisão.
 7. **Actions do GitHub** pinadas por SHA de commit, com a versão no comentário, como no Porecatu.
 
+> **Nota de implementação (2026-11-16):** o que o repositório tem hoje.
+>
+> - **Node** 26.13.0 em `.nvmrc`; `engines.node` declara o piso `>=26.13.0` (não a versão exata).
+> - **pnpm** 12.17.0, declarado em `packageManager` do `package.json`, mas **instalado globalmente**, sem Corepack; no CI, pela action `pnpm/action-setup`, que lê o `packageManager`. A configuração do pnpm 12 mora em `pnpm-workspace.yaml`, não no `.npmrc`: `nodeLinker: hoisted` (exigência do Metro) e `allowBuilds`, a lista explícita de pacotes cujo script de instalação pode rodar (o pnpm 12 bloqueia os demais). O `.npmrc` mantém `node-linker=hoisted` só para ferramentas que ainda o leem.
+> - **Expo SDK 58** (`expo` 58.0.25, React Native 0.88.1, React 19.3.0) e toda dependência em versão exata, com `pnpm-lock.yaml` commitado.
+> - **`@porecatu/protocol`** do tarball `vendor/porecatu-protocol-0.1.0.tgz` ([ADR-0004](0004-criptografia-em-js-puro.md)).
+> - **Dependabot** em `.github/dependabot.yml`, um PR por dependência (npm e Actions), sem agrupamento.
+
 ## Alternativas consideradas
 
 - **`npm` com `package-lock.json`.** Suficiente. Rejeitado em favor do `pnpm` pela instalação mais rápida e pelo isolamento estrito de dependências (pacote que não foi declarado não é importável). Funciona com Expo desde o SDK 50 com `node-linker=hoisted` quando necessário.
@@ -42,4 +50,4 @@ O app também depende do `@porecatu/protocol`, cuja versão tem de casar com a d
 | Risco | Probabilidade | Impacto | Mitigação |
 |---|---|---|---|
 | Ficar preso a um SDK antigo por adiar atualizações | Média | Médio | Subir o SDK a cada versão estável nova, no máximo um ciclo atrás |
-| `pnpm` e o bundler do Expo (Metro) se desentenderem com links simbólicos | Média | Baixo | `node-linker=hoisted` documentado no `.npmrc` se necessário |
+| `pnpm` e o bundler do Expo (Metro) se desentenderem com links simbólicos | Média | Baixo | `nodeLinker: hoisted` em `pnpm-workspace.yaml` (no pnpm 12; o `.npmrc` repete a linha para ferramentas antigas) |

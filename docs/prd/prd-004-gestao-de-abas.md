@@ -35,6 +35,7 @@ Acompanhar não basta: o usuário quer **abrir uma aba** para rodar um comando, 
 
 - **RF-4.9** Enquanto a ação não tem `action-result`, o item afetado mostra um indicador de pendência e não aceita outra ação.
 - **RF-4.10** Erros viram mensagens do catálogo pelo código: `unknown-*` ("isso não existe mais no desktop", e a árvore é atualizada), `busy` ("o desktop está com um diálogo aberto; tente de novo"), `confirm-timeout`, `cancelled` (sem mensagem: o próprio usuário cancelou), `unknown-profile`, `invalid-argument` e `unsupported` (mensagem genérica com o código, para relatório).
+- **RF-4.11** **Última aba**: fechar a última aba da última janela do desktop (por **Fechar aba**, ou por **Fechar painel** no último painel dela) é recusado pelo desktop com `last-tab` ([mensagens §7 e §9](https://github.com/porecatu/protocol/blob/main/docs/especificacao/03-mensagens.md)), porque encerraria o Porecatu. O app mostra a mensagem do catálogo para esse código (a aba é a última do desktop e não pode ser fechada), não fecha nada e não trata a árvore como desatualizada. Como todo resultado de ação, a recusa chega em `action-result`, e o item deixa de estar pendente. Implementado: o código tem a chave `error.last-tab` nos dois idiomas (`src/i18n/protocolMessages.ts`) e é classificado como falha visível, sem `staleTree`, em `src/session/requests.ts`.
 
 ## Fora de escopo
 
