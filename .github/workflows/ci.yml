@@ -1,0 +1,105 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+name: ci
+
+# The app is JavaScript, so one Linux runner covers typecheck, lint, tests and
+# the repository checks; macOS and Windows would only repeat the same result.
+# Native builds belong to a release workflow, not here.
+#
+# Actions are pinned by commit SHA with the readable version in the comment
+# beside it: a major tag is a movable pointer (ADR-0007). Dependabot updates
+# SHA and comment together. Node comes from `.nvmrc` and pnpm from
+# `packageManager` in package.json, so neither version is repeated here.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: typecheck, lint and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Reads the version from `packageManager`; must run before setup-node
+      # so that the pnpm store cache below can find the `pnpm` binary.
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm test
+
+  repository:
+    name: documentation, headers and licenses
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Documentation links
+        run: python3 scripts/verify-docs.py
+
+      - name: SPDX headers
+        run: python3 scripts/check-spdx.py
+
+      - name: Production dependency licenses
+        run: node scripts/check-licenses.mjs
+
+  dco:
+    name: DCO
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The whole history of the PR is needed to list its commits.
+          fetch-depth: 0
+
+      # Every commit of the PR must carry a `Signed-off-by:` trailer
+      # (CONTRIBUTING.md). Merge commits are skipped: they are not authored
+      # contributions. The SHAs come from the event, never from user text.
+      - name: Signed-off-by on every commit
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          missing=0
+          for sha in $(git rev-list --no-merges "$BASE_SHA..$HEAD_SHA"); do
+            if ! git show -s --format=%B "$sha" | grep -qE '^Signed-off-by: .+ <.+>$'; then
+              echo "::error::Commit $sha has no Signed-off-by line (use git commit -s)."
+              missing=1
+            fi
+          done
+          exit "$missing"

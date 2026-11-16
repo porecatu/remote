@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# pnpm 12 reads its own settings from here, not from .npmrc.
+
+# Metro (Expo) resolves modules through a flat node_modules (ADR-0007).
+nodeLinker: hoisted
+
+# pnpm 12 blocks dependency install scripts unless approved. This list is the
+# explicit decision per package; add an entry only after reading the script.
+allowBuilds:
+  # Prebuilt binaries ship as separate packages; the source build is a fallback.
+  '@parcel/watcher': false

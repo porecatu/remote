@@ -1,2 +1,8 @@
 node_modules/
 .expo/
+android/
+ios/
+coverage/
+dist/
+*.tgz
+!vendor/*.tgz

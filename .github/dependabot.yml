@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+version: 2
+
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+
+  # Every dependency is pinned to an exact version (ADR-0007), so a bump PR is
+  # the prompt to read the changelog, not something to merge blindly. Updates
+  # stay one PR per dependency: there are no `groups` here on purpose. The
+  # Expo SDK and its modules go up together in a PR of their own, by hand.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+      include: scope
