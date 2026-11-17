@@ -53,6 +53,11 @@ describe("catalog completeness", () => {
     }
   });
 
+  it("names each language in that language, the same in every catalog", () => {
+    expect(pt["language.en_US"]).toBe(en["language.en_US"]);
+    expect(pt["language.pt_BR"]).toBe(en["language.pt_BR"]);
+  });
+
   // Coverage of the protocol's codes lives in protocolMessages.test.ts, which
   // walks the arrays of @porecatu/protocol instead of a local list.
 });
@@ -71,7 +76,7 @@ describe("interpolation", () => {
 
   it("throws on a missing parameter in tests", () => {
     expect(() => t("pane_state.exited_code")).toThrow('Missing message parameter "code"');
-    expect(() => t("connection.attempt", { attempt: 1 })).toThrow(
+    expect(() => t("connection.reconnecting_attempt", { attempt: 1 })).toThrow(
       'Missing message parameter "total"',
     );
   });

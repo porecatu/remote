@@ -12,7 +12,7 @@ import { logEvent } from "@/log";
 import type { RandomSource, StaticKeypair } from "@/protocol";
 import type { Desktop, DesktopRepository, DesktopStatusKind } from "@/storage/desktopList";
 import type { Clock, Scheduler } from "./clock";
-import type { ConnectSession, LifecycleSnapshot, OpenSocket } from "./lifecycle";
+import type { ConnectSession, LifecycleSnapshot, OpenSocket, SessionHandover } from "./lifecycle";
 import { type SessionStore, createSessionStore } from "./sessionStore";
 
 export interface RegistryDeps {
@@ -33,6 +33,15 @@ export interface SessionRegistry {
    * desktop paired again (another key or relay) gets a new store.
    */
   open(desktop: Desktop): SessionStore;
+  /**
+   * Opens a desktop just paired on the connection the pairing left open
+   * (PRD-001 RF-1.10): `hello` goes on it, no new socket is opened. A store
+   * already open for the same desktop takes the new connection over (the
+   * session it had is closed); a desktop paired again with another key or
+   * relay gets a new store. Use it only when the `paired` state has
+   * `sessionEnded` false; otherwise call `open(desktop)`.
+   */
+  openPaired(desktop: Desktop, handover: SessionHandover): SessionStore;
   get(desktopId: string): SessionStore | undefined;
   /** Disposes the store of the desktop (closing the session cleanly). */
   close(desktopId: string): void;
@@ -154,6 +163,19 @@ export function createSessionRegistry(deps: RegistryDeps): SessionRegistry {
       }
       const session = build(desktop);
       session.start();
+      return session;
+    },
+    openPaired(desktop, handover) {
+      const existing = stores.get(desktop.id);
+      if (existing !== undefined) {
+        if (sameTarget(existing.desktop, desktop)) {
+          existing.session.startAdopted(handover);
+          return existing.session;
+        }
+        drop(desktop.id);
+      }
+      const session = build(desktop);
+      session.startAdopted(handover);
       return session;
     },
     get: (desktopId) => stores.get(desktopId)?.session,

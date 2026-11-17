@@ -59,9 +59,15 @@ export interface InputSenderOptions {
 export interface InputSender {
   /**
    * A named key (bar, arrows, function keys). The armed modifiers go with it
-   * and the "once" ones are spent, only if the key was sent.
+   * and the "once" ones are spent, only if the key was sent. With
+   * `keepModifiers` the key goes without modifiers and the armed ones are left
+   * for the next key (`Esc` of the key bar, anatomy §4.8).
    */
-  pressNamed(pane: PaneId, key: NamedKey): SendResult;
+  pressNamed(
+    pane: PaneId,
+    key: NamedKey,
+    options?: { readonly keepModifiers?: boolean },
+  ): SendResult;
   /**
    * Text from the system keyboard (also IME composition and dictation). With a
    * modifier armed and a single character, it goes as a `key` with the
@@ -105,12 +111,13 @@ export function createInputSender(options: InputSenderOptions): InputSender {
   };
 
   return {
-    pressNamed(pane, key) {
+    pressNamed(pane, key, pressOptions) {
       const refusal = paneRefusal(pane);
       if (refusal !== null) {
         return { ok: false, reason: refusal };
       }
-      send({ type: "key", pane, key, mods: modifiers.consume() });
+      const mods = pressOptions?.keepModifiers === true ? 0 : modifiers.consume();
+      send({ type: "key", pane, key, mods });
       return { ok: true };
     },
 

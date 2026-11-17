@@ -52,6 +52,7 @@ import {
   type Lifecycle,
   type LifecycleDeps,
   type LifecycleSnapshot,
+  type SessionHandover,
   type WelcomeInfo,
   createLifecycle,
   isLiveState,
@@ -114,6 +115,11 @@ export interface SessionStore {
   readonly store: StoreApi<SessionState>;
   getState(): SessionState;
   start(): void;
+  /**
+   * Starts on the connection a pairing left open (PRD-001 RF-1.10) instead of
+   * connecting: `hello` goes on it. See `SessionHandover` for when to use it.
+   */
+  startAdopted(handover: SessionHandover): void;
   /** The user leaves the desktop. */
   close(): void;
   enterBackground(): void;
@@ -302,6 +308,9 @@ export function createSessionStore(deps: SessionStoreDeps): SessionStore {
     getState: () => store.getState(),
     start: () => {
       lifecycle.start();
+    },
+    startAdopted: (handover) => {
+      lifecycle.adopt(handover);
     },
     close: () => {
       lifecycle.close();

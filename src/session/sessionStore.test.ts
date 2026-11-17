@@ -2,7 +2,7 @@
 
 import { ErrorCode, ConfirmKind, type Message } from "@/protocol";
 import { group, tab, win, workspace } from "@/workspace/testing";
-import { closeTab, newTab, renameTab } from "./actions";
+import { activateTab, closeTab, newTab, renameTab } from "./actions";
 import { CONFIRM_TIMEOUT_MS } from "./confirm";
 import { NEW_TAB_APPEAR_TIMEOUT_MS } from "./requests";
 import { type SessionEvent, type SessionStore, createSessionStore } from "./sessionStore";
@@ -216,6 +216,15 @@ describe("session store: actions", () => {
         lost: [expect.objectContaining({ id: 1 })],
       }),
     ]);
+  });
+
+  it("drops a pending activate-tab without an actions-lost event", () => {
+    const r = rig();
+    ready(r);
+    expect(r.session.sendAction((id) => activateTab(id, 1))).toEqual({ ok: true, id: 1 });
+    r.h.network.last().drop();
+    expect(r.session.getState().requests.pending.size).toBe(0);
+    expect(r.events).toEqual([]);
   });
 });
 

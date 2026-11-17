@@ -36,7 +36,20 @@ const config: ExpoConfig = {
         faceIDPermission: "Porecatu Remote uses Face ID to unlock the app.",
       },
     ],
+    // Iosevka Fixed 400 and 500, copied from the desktop (ADR-0009), are
+    // registered in the binary at build time: nothing loads at runtime.
+    [
+      "expo-font",
+      {
+        fonts: [
+          "./assets/fonts/IosevkaFixed-Regular.ttf",
+          "./assets/fonts/IosevkaFixed-Medium.ttf",
+        ],
+      },
+    ],
     // expo-screen-capture (SDK 58) ships no config plugin: nothing to register.
+    // Neither do react-native-svg, Gesture Handler, Reanimated, Worklets,
+    // Keyboard Controller and Skia (autolinked native modules).
   ],
 };
 

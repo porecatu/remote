@@ -46,6 +46,14 @@ describe("pressNamed", () => {
     ]);
   });
 
+  it("with keepModifiers sends the key plain and leaves the armed modifiers", () => {
+    const { sender, sent, modifiers } = makeSender();
+    modifiers.tap("ctrl");
+    sender.pressNamed(PANE, NamedKey.escape, { keepModifiers: true });
+    expect(sent).toEqual([{ type: "key", pane: PANE, key: NamedKey.escape, mods: 0 }]);
+    expect(modifiers.state("ctrl")).toBe("once");
+  });
+
   it("does not spend the modifiers when the key is refused", () => {
     const { sender, sent, modifiers } = makeSender({ subscribed: false });
     modifiers.tap("ctrl");

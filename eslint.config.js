@@ -24,6 +24,31 @@ module.exports = defineConfig([
           message: "Use crypto.getRandomValues; Math.random is not a secure source.",
         },
       ],
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            // Metro does not tree-shake: the index would bundle every icon.
+            {
+              name: "lucide-react-native",
+              message:
+                "Import each icon from 'lucide-react-native/icons/<name>', never the package index (ADR-0008).",
+            },
+            {
+              name: "lucide-react-native/icons",
+              message:
+                "Import each icon from 'lucide-react-native/icons/<name>', never the icons index (ADR-0008).",
+            },
+            // Modal opens a separate native window, above the privacy cover.
+            {
+              name: "react-native",
+              importNames: ["Modal"],
+              message:
+                "Sheets, dialogs and snackbars go through the app's overlay layer, never Modal (ADR-0011).",
+            },
+          ],
+        },
+      ],
     },
   },
   {

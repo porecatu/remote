@@ -6,13 +6,16 @@
 // scripted host for the replies `createFakeHost` cannot give, and a harness
 // that puts them together. Not imported by app code.
 
-import { closeReasonFromCode } from "@/net/relaySocket";
-import type { OpenSocket } from "@/session/lifecycle";
+import { type RelaySocket, clientUrl, closeReasonFromCode } from "@/net/relaySocket";
+import { type SwitchableHandlers, createSwitchableHandlers } from "@/net/socketHandoff";
+import type { OpenSocket, SessionHandover } from "@/session/lifecycle";
 import {
+  ClientSession,
   type HostEvent,
   HostChannel,
   type Message,
   PROTOCOL_VERSION,
+  Platform,
   type StaticKeypair,
   type Theme,
   type WorkspaceMessage,
@@ -390,4 +393,72 @@ export function greetingHost(
       send(tree);
     },
   });
+}
+
+// ----------------------------------------------------------------- pairing handover
+
+export interface PairedChannel {
+  /** What the pairing hands to the session (`SessionHandover`). */
+  readonly handover: SessionHandover;
+  /** The socket of the pairing, on the fake network. */
+  readonly socket: FakeSocket;
+  readonly switchable: SwitchableHandlers;
+}
+
+/**
+ * Pairs `h.device` with the harness's fake host (`XX`) over a socket of the
+ * fake network, the way the pairing controller does, and stops at
+ * `pair-accepted` with the socket's events held (no target) for the handover.
+ * Use a harness made with `paired: false`.
+ */
+export function pairOnRelay(h: Harness, early: readonly Message[] = []): PairedChannel {
+  const invite = h.host.startPairing(TEST_RELAY_URL);
+  const url = clientUrl(TEST_RELAY_URL, h.host.hostId);
+  if (url === null) {
+    throw new Error("bad test relay url");
+  }
+  const device = { publicKey: h.device.publicKey.slice(), privateKey: h.device.privateKey.slice() };
+  const started = ClientSession.pair(invite, device, "Test Phone", Platform.android, h.time.clock.now());
+  const switchable = createSwitchableHandlers();
+  let socket: RelaySocket | null = null;
+  let accepted = false;
+  switchable.setTarget({
+    onOpen: () => {
+      for (const frame of started.frames) {
+        socket?.send(frame);
+      }
+    },
+    onFrame: (frame) => {
+      for (const event of started.session.receive(frame, h.time.clock.now())) {
+        if (event.type === "send") {
+          socket?.send(event.frame);
+        } else if (event.type === "message" && event.message.type === "pair-accepted") {
+          accepted = true;
+        }
+      }
+    },
+    onClose: () => undefined,
+  });
+  socket = h.network.openSocket(url, switchable.handlers);
+  if (socket === null) {
+    throw new Error("socket refused");
+  }
+  const fake = h.network.last();
+  fake.open();
+  if (!accepted) {
+    throw new Error("pairing was not accepted");
+  }
+  switchable.setTarget(null);
+  return {
+    handover: {
+      session: started.session,
+      socket,
+      redirect: (handlers) => {
+        switchable.setTarget(handlers);
+      },
+      early,
+    },
+    socket: fake,
+    switchable,
+  };
 }

@@ -21,6 +21,9 @@
 // - The backoff counter goes back to zero when the `welcome` arrives.
 // - An `error { protocol }` from the host ends the session for good: it would
 //   fail again the same way.
+// - A session adopted from the pairing (`adopt`, PRD-001 RF-1.10) is not a
+//   `ready` yet: a drop before its first `ready` is `failed` ("unreachable"),
+//   as for any first connection. Retries always open a new connection (`IK`).
 
 import { logEvent } from "@/log";
 import {
@@ -171,6 +174,28 @@ export interface LifecycleDeps {
   readonly random?: RandomSource;
 }
 
+/**
+ * The connection a pairing left open (PRD-001 RF-1.10), handed to the
+ * lifecycle so it says `hello` on it (spec 02 §3.2, item 5) instead of
+ * connecting again. Built from the `paired` state of the pairing flow, and
+ * only when its `sessionEnded` is false: when the channel already ended, the
+ * caller opens the desktop the normal way (`start`).
+ */
+export interface SessionHandover {
+  /** The session authenticated by the pairing handshake (`XX`), already open. */
+  readonly session: ClientSession;
+  /** The socket that session runs on, still open. */
+  readonly socket: RelaySocket;
+  /**
+   * Points the socket's events at the lifecycle from now on (see
+   * `createSwitchableHandlers`). Events that came in between are expected to
+   * be delivered, in order, from inside this call.
+   */
+  readonly redirect: (handlers: RelaySocketHandlers) => void;
+  /** Messages the pairing already received after `pair-accepted`, in order. */
+  readonly early: readonly Message[];
+}
+
 export interface LifecycleHandlers {
   /** Every change of the snapshot, with the one before it. */
   onChange(next: LifecycleSnapshot, previous: LifecycleSnapshot): void;
@@ -184,6 +209,14 @@ export interface Lifecycle {
   snapshot(): LifecycleSnapshot;
   /** Connects from `idle`, `closed` or `failed`, with a fresh backoff. Elsewhere it does nothing. */
   start(): void;
+  /**
+   * Takes over the connection a pairing left open (RF-1.10): goes straight to
+   * `greeting`, handles `early` in order, says `hello` and goes on as after any
+   * handshake. A session that is running is closed first (`closed`, "user")
+   * so the new one replaces it. A handover whose session is no longer open
+   * ends in `failed` ("unreachable"), like a drop before the first `ready`.
+   */
+  adopt(handover: SessionHandover): void;
   /** The user leaves: says goodbye when it can and ends in `closed` ("user"). */
   close(): void;
   /** False unless the session is `ready`. Never logs the message. */
@@ -437,6 +470,60 @@ export function createLifecycle(deps: LifecycleDeps, handlers: LifecycleHandlers
     }
   }
 
+  function adoptAttempt(handover: SessionHandover): void {
+    retryTimer = clearTimer(retryTimer);
+    cleanupAttempt();
+    backoff = resetBackoff();
+    const current: Attempt = {
+      session: handover.session,
+      socket: handover.socket,
+      openedEarly: false,
+      opened: true,
+      startFrames: [],
+      handshakeDone: true,
+      welcomed: false,
+      gotTheme: false,
+      gotProfiles: false,
+      gotWorkspace: false,
+      closing: false,
+    };
+    attempt = current;
+    update({ state: "greeting", attempt: 0, retryAt: null, end: null });
+    logEvent("handshake_ok", { via: "pairing" });
+    if (!handover.session.isOpen) {
+      drop("adopted-closed");
+    } else {
+      // What came before the `hello` is handled first, in the order it came.
+      for (const message of handover.early) {
+        if (attempt !== current) {
+          break;
+        }
+        onHostMessage(current, message);
+      }
+      if (attempt === current) {
+        sendMessage(current, {
+          type: "hello",
+          version: PROTOCOL_VERSION,
+          app: APP_NAME,
+          appVersion: deps.appVersion,
+        });
+      }
+    }
+    // Always taken, even when the attempt already ended: the frames that
+    // waited for it are then dropped by the `attempt === current` checks.
+    handover.redirect({
+      onOpen: () => undefined,
+      onFrame: (frame) => {
+        onFrame(current, frame);
+      },
+      onClose: (info) => {
+        if (attempt === current && !current.closing && !info.local) {
+          drop(`closed:${info.code}`);
+        }
+      },
+    });
+  }
+
   function onOpen(current: Attempt): void {
     if (attempt !== current || current.opened) {
       return;
@@ -634,6 +721,14 @@ export function createLifecycle(deps: LifecycleDeps, handlers: LifecycleHandlers
       }
       backoff = resetBackoff();
       openAttempt();
+    },
+
+    adopt(handover: SessionHandover): void {
+      const state = snapshot.state;
+      if (state !== "idle" && state !== "closed" && state !== "failed") {
+        closeSession("user");
+      }
+      adoptAttempt(handover);
     },
 
     close(): void {

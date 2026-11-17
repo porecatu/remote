@@ -2,6 +2,7 @@
 
 import { decodeMessage, encodeMessage, type Action } from "@/protocol";
 import {
+  activateTab,
   closePane,
   closeTab,
   collapseGroup,
@@ -47,11 +48,12 @@ describe("action builders", () => {
     moveGroupToWindow(15, 3, 11),
     ungroup(16, 3),
     startPane(17, 30),
+    activateTab(18, 20),
   ];
 
-  it("covers the 13 action kinds of the spec", () => {
+  it("covers the 14 action kinds of the spec", () => {
     const kinds = new Set(all.map((action) => action.do.type));
-    expect(kinds.size).toBe(13);
+    expect(kinds.size).toBe(14);
   });
 
   it("builds valid wire messages", () => {
@@ -65,6 +67,11 @@ describe("action builders", () => {
       type: "move-tab-to-group",
       tab: 2,
       group: null,
+    });
+    expect(activateTab(7, 20)).toEqual({
+      type: "action",
+      id: 7,
+      do: { type: "activate-tab", tab: 20 },
     });
   });
 
@@ -107,6 +114,10 @@ describe("targetsOf", () => {
     expect(keys(collapseGroup(1, 4, false))).toEqual(["group:4"]);
     expect(keys(moveGroupToWindow(1, 4, 2))).toEqual(["group:4"]);
     expect(keys(ungroup(1, 4))).toEqual(["group:4"]);
+  });
+
+  it("marks nothing for activate-tab, so it never shows as pending", () => {
+    expect(keys(activateTab(1, 7))).toEqual([]);
   });
 
   it("marks every tab of new-group", () => {
