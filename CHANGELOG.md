@@ -6,11 +6,13 @@ primeira versão publicada nas lojas.
 
 ## [Não lançado]
 
-Implementação inicial: **só a camada de lógica, nenhuma tela**. Telas dependem
-do aval visual do dono e o render da grade, do spike do
-[ADR-0002](docs/adr/0002-render-da-grade-com-skia.md). Tudo o que entrou é
-verificado por teste automatizado em Node (`pnpm test`: 651 testes em 39
-suítes); nada foi rodado num aparelho. Dívida de verificação no
+Implementação inicial: a camada de lógica (2026-11-16) e as telas dos PRDs 001
+a 004 (2026-11-17), conforme a [anatomia das telas](docs/design/proposta-de-anatomia.md)
+aprovada. O app segue a **especificação 0.4** do protocolo. Tudo o que entrou é
+verificado por teste automatizado em Node (`pnpm test`: 1593 testes em 129
+suítes, com `jest-expo` e `@testing-library/react-native`); **nada foi rodado
+num aparelho**, e o [ADR-0002](docs/adr/0002-render-da-grade-com-skia.md) segue
+Proposto até a medição do render em aparelho. Dívida de verificação no
 [roadmap](docs/roadmap.md).
 
 ### Adicionado
@@ -19,9 +21,8 @@ suítes); nada foi rodado num aparelho. Dívida de verificação no
   `expo-router`, *development build*) em TypeScript 6.0.3 estrito, com Node
   26.13.0, pnpm 12.17.0 e todas as dependências em versão exata
   ([ADR-0001](docs/adr/0001-expo-e-typescript.md),
-  [ADR-0007](docs/adr/0007-toolchain-pinada.md)). `app/_layout.tsx` mínimo, sem
-  conteúdo visual. Identificador `br.com.porecatu.remote` e textos das
-  permissões nativas **provisórios**.
+  [ADR-0007](docs/adr/0007-toolchain-pinada.md)). Identificador
+  `br.com.porecatu.remote` e textos das permissões nativas **provisórios**.
 - **Protocolo** pelo `@porecatu/protocol` 0.1.0, vindo de
   `vendor/porecatu-protocol-0.1.0.tgz` enquanto o pacote não é publicado;
   `src/protocol/` é o único ponto de re-export. Aleatoriedade por
@@ -51,9 +52,9 @@ suítes); nada foi rodado num aparelho. Dívida de verificação no
   só para painel assinado e `running`, teto de 1 MiB por envio e confirmação
   do colar sempre que houver quebra de linha, com prévia de 5 linhas × 120
   caracteres.
-- **Gestão de abas**: as 13 ações da spec, pendência por item, espera da aba
-  criada e confirmações de fechamento com prazo de 60 s
-  ([PRD-004](docs/prd/prd-004-gestao-de-abas.md)).
+- **Gestão de abas**: as ações da spec (14 desde a 0.4, veja em *Mudado*),
+  pendência por item, espera da aba criada e confirmações de fechamento com
+  prazo de 60 s ([PRD-004](docs/prd/prd-004-gestao-de-abas.md)).
 - **Catálogo de textos** `en_US` e `pt_BR` com chaves tipadas, plural escrito à
   mão e mensagem para todo código do protocolo
   ([ADR-0005](docs/adr/0005-catalogo-de-textos-e-idiomas.md)).
@@ -62,6 +63,107 @@ suítes); nada foi rodado num aparelho. Dívida de verificação no
   `127.0.0.1`, com URI e QR em texto, para desenvolver o app sem o Porecatu.
 - **CI**: `typecheck`, `lint` e `test`; links da documentação, cabeçalhos SPDX,
   licenças das dependências de produção e DCO; Dependabot.
+- **Dependências das telas**, em versão exata: `lucide-react-native` sobre
+  `react-native-svg` ([ADR-0008](docs/adr/0008-icones-lucide-em-svg.md)),
+  `expo-font` com a Iosevka Fixed 400/500 em `assets/fonts/`
+  ([ADR-0009](docs/adr/0009-iosevka-fixed-embutida.md)),
+  `react-native-gesture-handler`, `react-native-reanimated`,
+  `react-native-worklets` e `react-native-keyboard-controller`
+  ([ADR-0010](docs/adr/0010-gestos-animacao-e-teclado.md)),
+  `@shopify/react-native-skia`
+  ([ADR-0002](docs/adr/0002-render-da-grade-com-skia.md), Proposto), e o
+  `@testing-library/react-native` para os testes de tela. O lint proíbe o índice
+  do Lucide e o `Modal` do React Native; os mocks oficiais das bibliotecas
+  nativas ficam em `test/setup/`.
+- **Tema e primitivas** (`ui/theme/`, `ui/components/`): os tokens da
+  anatomia §2 em claro e escuro, o componente `Icon` e as primitivas (botões,
+  linhas de lista, barra de tela, campo, chip, rádio, interruptor, faixa,
+  estado vazio, esqueleto).
+- **Serviços e controladores**: `ui/services/` concentra os módulos nativos
+  atrás de interfaces (só `nativeServices.ts` os importa), e `src/controllers/`
+  liga a lógica às telas sem React: `appShell` (bloqueio, segundo plano e
+  *deep link*), `desktops`, `settings`, `pairing`, `terminalSession` (assinatura,
+  input, histórico e colar do painel na tela) e `overlay`
+  ([arquitetura](docs/arquitetura.md) §1).
+- **Raiz do app** (`ui/root/`, `app/_layout.tsx`): tela de bloqueio, cobertura
+  de privacidade acima de tudo, *deep link* de pareamento entregue ao fluxo só
+  depois do desbloqueio, e o `app/+native-intent.tsx`, que impede o token de
+  pareamento de virar parâmetro de rota. O navegador só monta depois do
+  primeiro desbloqueio ([PRD-001](docs/prd/prd-001-desktops-e-pareamento.md)
+  RF-1.5, RF-1.17 a RF-1.20).
+- **Folhas, diálogos e avisos próprios** (`ui/overlay/`), na mesma janela e
+  sem `Modal`, com voltar do Android, conteúdo de baixo escondido do leitor de
+  tela e foco devolvido à origem ao fechar
+  ([ADR-0011](docs/adr/0011-folhas-dialogos-e-avisos-proprios.md)).
+- **Tela de desktops** (`app/index.tsx`, `ui/screens/desktops/`): lista com
+  presença e estado da última conexão, puxar para atualizar, renomear e remover
+  ([PRD-001](docs/prd/prd-001-desktops-e-pareamento.md) RF-1.12 a RF-1.16).
+- **Telas de pareamento** (`app/pair/`, `ui/screens/pairing/`): leitura do QR
+  pela câmera, nome do aparelho, espera da confirmação com a impressão digital e
+  os resultados; o workspace abre na mesma sessão do pareamento (RF-1.10).
+- **Configurações e Este aparelho** (`app/settings/`, `ui/screens/settings/`):
+  idioma, bloqueio do app, vibração na campainha, nome e impressão digital do
+  aparelho, e recriar a identidade (RF-1.2, RF-1.3).
+- **Tela do workspace** (`app/desktop/[id]/`, `ui/screens/workspace/`): a árvore
+  de janelas, grupos, fixadas e abas, busca, faixa de conexão e telas de
+  estado, com a sessão aberta ao entrar e fechada ao sair
+  ([PRD-002](docs/prd/prd-002-navegacao-do-workspace.md)).
+- **Tela do terminal** (`app/desktop/[id]/tab/[tab].tsx`,
+  `ui/screens/terminal/`, `ui/terminal/`): grade desenhada em Skia com uma
+  gravação por linha (`ui/terminal/grid/`), zoom e rolagem (`src/terminal/`),
+  histórico, seletor de painéis, cartão de estado do painel, barra de teclas
+  grudada no teclado, colar com confirmação, campainha e captura de tela
+  bloqueada enquanto a tela está aberta
+  ([PRD-003](docs/prd/prd-003-terminal.md)).
+- **Gestão de abas na tela** (`ui/sheets/`, `ui/session/`): menus da aba e do
+  grupo, Nova aba com perfil, folhas de renomear, mover para grupo e para
+  janela, novo grupo e cor do grupo, a confirmação de fechamento pedida pelo
+  desktop e os avisos de falha por código
+  ([PRD-004](docs/prd/prd-004-gestao-de-abas.md)).
+- **Catálogo das telas**: os textos de todas as telas em `en_US` e `pt_BR`
+  (363 chaves), tempo relativo escrito à mão (`src/i18n/relativeTime.ts`) e a
+  mensagem para input recusado por tamanho (RF-3.25).
+
+### Mudado
+
+- **Especificação 0.4 do protocolo**
+  ([ADR-0010 do protocolo](https://github.com/porecatu/protocol/blob/main/docs/adr/0010-aba-ativa-pelo-cliente.md)),
+  com o fio ainda `[0, 1]`: a ação nova `activate-tab` (`activateTab` em
+  `src/session/actions.ts`, 14 ações). Abrir uma aba no terminal do app a ativa
+  na janela dela no desktop, uma vez por abertura e em silêncio na falha
+  (`activateOnce` em `src/controllers/terminalSession.ts`); as ações ativam como
+  o gesto local. O app nunca muda o painel focado nem a janela do sistema.
+  `activate-tab` é ação de fundo (`isBackgroundAction`): não marca item como
+  pendente, e falha ou perda na queda não viram aviso (`src/session/requests.ts`).
+- **`vendor/porecatu-protocol-0.1.0.tgz` regerado** do repositório do protocolo
+  para a 0.4, com o mesmo nome e a mesma versão do pacote; o `pnpm-lock.yaml`
+  tem a integridade nova ([ADR-0004](docs/adr/0004-criptografia-em-js-puro.md)).
+- **Aba fixada**: fechar manda a ação direto, e a única confirmação é a do
+  desktop (`confirm-request`), que agora diz que a aba será desafixada (nota
+  `confirm_close.pinned_note`); fixada sem processos vivos mostra só a nota e o
+  prazo ([PRD-004](docs/prd/prd-004-gestao-de-abas.md)).
+- **Adoção da sessão do pareamento** (RF-1.10): o workspace continua na sessão
+  que o pareamento abriu, em vez de abrir conexão nova (`Lifecycle.adopt`,
+  `SessionStore.startAdopted`, `SessionRegistry.openPaired`,
+  `src/net/socketHandoff.ts`); as mensagens que chegam antes do `hello` são
+  processadas, e a adoção fecha uma sessão viva do mesmo desktop.
+- **`settings.v1` no esquema 2**, com `deviceName`, o nome do último pareamento
+  concluído, que pré-preenche o próximo (RF-1.2). O nome do item não mudou: o
+  esquema 1 é migrado na leitura, pelo campo `schema`
+  ([ADR-0003](docs/adr/0003-chaves-no-armazenamento-seguro.md)).
+- **`Esc` da barra de teclas** sai sem modificadores e deixa os armados para a
+  próxima tecla (anatomia §4.8): `pressNamed(pane, key, { keepModifiers })` em
+  `src/input/send.ts`. Texto do campo de captura com quebra de linha (colagem
+  pela barra do próprio teclado) vai pelo fluxo de colar, com confirmação.
+
+### Removido
+
+- O diálogo próprio de fechar aba fixada (chaves `tab_menu.close_pinned_title`
+  e `tab_menu.close_pinned_body`), substituído pela confirmação do desktop.
+- Chaves do catálogo que as telas não usaram, entre elas `paste.confirm_title`,
+  `connection.attempt`, `connection.reconnecting_in.*`, `desktop_status.connected`,
+  `desktop_status.last_attempt`, `desktop_status.offline` e
+  `pairing.no_camera`.
 
 ### Documentação
 
@@ -70,5 +172,22 @@ suítes); nada foi rodado num aparelho. Dívida de verificação no
   mão (ADR-0005), Keystore sem `EncryptedSharedPreferences` (ADR-0003), CBOR do
   próprio pacote (ADR-0004), pnpm sem Corepack (ADR-0007), e as decisões do
   dono de 2026-11-16 registradas nos PRDs.
-- [Proposta de anatomia](docs/design/proposta-de-anatomia.md) das telas,
-  **aguardando o aval do dono**.
+- [Anatomia das telas](docs/design/proposta-de-anatomia.md), escrita como
+  proposta e **aprovada pelo dono em 2026-11-16** com as oito recomendações do
+  §7 dela; as decisões do mesmo dia nos PRDs (RF-1.20, RF-2.8, RF-3.17) foram
+  incorporadas ao texto, e "Este aparelho" passou para dentro de Configurações
+  no mapa de telas da [arquitetura](docs/arquitetura.md).
+- ADRs das peças que as telas pedem:
+  [ADR-0008](docs/adr/0008-icones-lucide-em-svg.md) (ícones Lucide em SVG),
+  [ADR-0009](docs/adr/0009-iosevka-fixed-embutida.md) (Iosevka Fixed recortada
+  do desktop), [ADR-0010](docs/adr/0010-gestos-animacao-e-teclado.md) (Gesture
+  Handler, Reanimated e Keyboard Controller) e
+  [ADR-0011](docs/adr/0011-folhas-dialogos-e-avisos-proprios.md) (folhas,
+  diálogos e avisos próprios, sem `Modal`).
+- Docs reconciliados com as telas e a especificação 0.4 (2026-11-17): estado no
+  [CLAUDE.md](CLAUDE.md) e no [README](README.md), princípio 3 reescrito (o app
+  muda a aba ativa como o gesto local, nunca o painel focado nem a janela do
+  sistema), novas armadilhas, mapa de módulos e rotas na
+  [arquitetura](docs/arquitetura.md), notas de implementação nos ADRs e nos
+  PRDs, e as escolhas da implementação que esperam o aval do dono listadas na
+  [anatomia](docs/design/proposta-de-anatomia.md).

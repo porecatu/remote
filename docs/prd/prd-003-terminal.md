@@ -24,6 +24,9 @@ A tela do terminal é onde o app entrega valor: ler a saída de um build, ver o 
 ### Grade ao vivo
 
 - **RF-3.1** Abrir uma aba assina o painel focado (`subscribe`) e mostra a grade quando chega o `grid-snapshot`. Sair da tela cancela a assinatura (`unsubscribe`).
+- **RF-3.26** Abrir uma aba no terminal do app a torna a **aba ativa** da janela dela no desktop, com a ação `activate-tab` ([ADR-0010 do protocolo](https://github.com/porecatu/protocol/blob/main/docs/adr/0010-aba-ativa-pelo-cliente.md)): o desktop passa a mostrar a mesma aba. O envio é automático (sem item de menu nem opção), **uma vez por abertura**, no primeiro momento em que a sessão está pronta com a aba na árvore, e só quando ela ainda não é a ativa da janela; trocar de painel no seletor não manda de novo. A falha é **silenciosa**: nenhum aviso e nenhum indicador de pendência. O app **nunca** muda o painel focado da aba nem a janela do sistema operacional.
+
+  > **Decidido pelo dono em 2026-11-17** (especificação 0.4). Implementado em `src/controllers/terminalSession.ts` (`activateOnce`), `src/session/actions.ts` (`activateTab`, e `isBackgroundAction`, que marca a ação como de fundo) e `src/session/requests.ts` (falha ou perda de ação de fundo não vira aviso).
 - **RF-3.2** O app aplica cada `grid-diff` sobre o estado anterior, confere a sequência (`seq`) e confirma com `grid-ack` **depois** de aplicar. Sequência quebrada é tratada como dessincronia: o app assina de novo o painel, o que traz um snapshot novo.
 
   > **Revisão (2026-11-16, alinhamento com a spec):** a [spec §5.3](https://github.com/porecatu/protocol/blob/main/docs/especificacao/03-mensagens.md) diz que um `seq` fora de sequência só acontece por defeito de implementação e é **erro de protocolo**: o cliente manda `error { protocol }`, a sessão fecha e o cliente **não** tenta se recuperar por conta própria. A spec é normativa, e o app segue ela: `grid-diff` sem snapshot antes, com `seq` diferente de anterior + 1 ou malformado faz o app mandar `error { protocol }` e encerrar a sessão (`src/session/subscription.ts`, `src/grid/gridModel.ts`), sem assinar de novo. Assinar de novo continua sendo o jeito de pedir o estado completo quando o app quer, não a reação a uma lacuna. O `seq` **não** reinicia no snapshot: snapshots e diffs dividem a mesma sequência da assinatura.
@@ -71,6 +74,33 @@ A tela do terminal é onde o app entrega valor: ler a saída de um build, ver o 
 ### Privacidade
 
 - **RF-3.24** Grade, histórico e texto colado nunca vão para log, relatório de crash ou analytics, e o app não tem analytics no v1.
+
+## Implementação (2026-11-17)
+
+A tela segue a [anatomia](../design/proposta-de-anatomia.md) §4.6 a §4.11. Implementada e coberta por testes automatizados em Node; **nada foi rodado num aparelho**. A grade é desenhada com Skia como o [ADR-0002](../adr/0002-render-da-grade-com-skia.md) propõe, e ele continua **Proposto** até a medição em aparelho; nenhum requisito está verificado no sentido do [roadmap](../roadmap.md).
+
+| Requisitos | Onde |
+|---|---|
+| RF-3.1 a RF-3.3, RF-3.26 | rota `app/desktop/[id]/tab/[tab].tsx`; `ui/screens/terminal/` (`TerminalScreen`, `useTerminalSession`); controlador `src/controllers/terminalSession.ts` sobre `src/session/subscription.ts` |
+| RF-3.4, RF-3.5 | grade em `ui/terminal/grid/` (motor em `gridEngine.ts`, uma gravação por linha, box-drawing e blocos como formas em `boxDrawing.ts`), cores de `src/grid/colorMath.ts`, fonte de `ui/theme/fonts.ts` |
+| RF-3.6 a RF-3.13 | contas de zoom, rolagem, cursor e histórico em `src/terminal/viewport.ts`; gestos em `ui/terminal/grid/useGridGestures.ts`; `ui/terminal/FloatingButtons.tsx` e `ZoomChip.tsx` |
+| RF-3.14 a RF-3.19, RF-3.25 | campo de captura `ui/terminal/CaptureInput.tsx`; barra de teclas `ui/terminal/KeyBar.tsx` e `KeyBarKey.tsx`; colar em `ui/terminal/PasteDialog.tsx`; envio em `src/input/` |
+| RF-3.20 a RF-3.23 | `ui/terminal/PaneStateCard.tsx` e `TerminalBar.tsx` |
+| RF-3.24 | regra de todas as camadas: nenhum log de conteúdo (`src/log.ts`) |
+
+Decisões tomadas na implementação:
+
+- **Botão "Caber a largura" (RF-3.7).** Aparece quando o zoom não é o de caber e aplica caber a largura, mesmo numa grade larga, que abre na leitura de 12 pt: o rótulo do botão vence o "volta ao padrão" da anatomia. O chip de zoom mede 100% no caber. Grade estreita, cujo caber passaria de 24 pt, fica em 24 pt. *Padrão do orquestrador, a confirmar com o dono.*
+- **Redimensionamento (RF-3.10).** O zoom guarda a mesma razão sobre o caber anterior (`rescaleOnResize`).
+- **`Esc` da barra (RF-3.16)** sai sem modificadores e mantém o armado para a próxima tecla (anatomia §4.8: "`Esc` e `Fn` não consomem o armado"), por `pressNamed(pane, key, { keepModifiers })` em `src/input/send.ts`. *Padrão do orquestrador, a confirmar com o dono.*
+- **Quebra de linha vinda do teclado (RF-3.14, RF-3.17).** Digitação nunca traz quebra de linha (o Enter chega pelo envio do campo); texto do campo de captura com quebra veio de uma colagem pela faixa do próprio teclado (Gboard, iOS) e vai pelo fluxo de **colar**, com confirmação, não como `text-input`.
+- **Colar (RF-3.17).** Na prévia, o tab aparece como espaço (não `^I`) e o C1 aparece como o escape de 7 bits que ele representa; o rodapé mostra só "M caracteres" quando nenhuma linha ficou de fora; erro ao ler a área de transferência conta como vazia.
+- **Estados (RF-3.18, RF-3.20 a RF-3.22).** Fora de `ready`, a grade fica a 60% e em somente leitura (a anatomia só fixava isso para a árvore). Durante a reconexão o seletor de painéis continua aberto ao toque, e o menu da aba fica bloqueado.
+- **Campainha (RF-3.23).** O `bell` da barra acende e esmaece linear em 2 s, sem cadência de piscar (com reduzir movimento, aceso fixo por 2 s); a vibração usa o háptico de notificação de aviso. "Vibrar na campainha" aparece sempre em Configurações: os serviços não sabem se o aparelho vibra.
+- **Paisagem** imersiva esconde a barra de status do sistema.
+- **Aba que some (RF-2.11)**, inclusive quando o Porecatu reinicia: a tela volta à árvore com o aviso "A aba foi fechada no desktop.".
+
+Ficam para o aparelho: desempenho da grade 200×60, alinhamento da fonte e fallback de emoji e CJK, sensação dos gestos, barra de teclas grudada no teclado, teclado físico, IME e aspas inteligentes do iOS, colar pela faixa do Gboard e o "Permitir colar" do iOS, `FLAG_SECURE`, vibração, paisagem, pilha restaurada no terminal e leitor de tela ([roadmap](../roadmap.md)).
 
 ## Fora de escopo
 

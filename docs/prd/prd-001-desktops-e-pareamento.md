@@ -20,6 +20,8 @@ Antes de qualquer coisa, o celular precisa saber **qual desktop** acessar, **por
 
 - **RF-1.1** Na primeira execução, o app gera o par de chaves estáticas X25519 do aparelho e guarda a privada no armazenamento seguro do sistema ([ADR-0003](../adr/0003-chaves-no-armazenamento-seguro.md)). A chave nunca sai do aparelho e nunca aparece na interface.
 - **RF-1.2** O app mostra, numa tela de "Sobre este aparelho", a **impressão digital** da chave do aparelho no formato da spec (`ABCD EFGH IJKL MNOP`) e o nome do aparelho.
+
+  > **Decidido pelo dono em 2026-11-16:** o nome do aparelho é o **do último pareamento concluído**. As configurações (`settings.v1`) passam ao esquema 2, com o campo `deviceName` (até 64 bytes em UTF-8, a regra do pareamento); o esquema 1 é migrado na leitura, com `deviceName: null`, e o nome do item no armazenamento não muda. O nome guardado pré-preenche o próximo pareamento (RF-1.7). Antes do primeiro pareamento, a tela e o pré-preenchimento usam o modelo do aparelho (`expo-device`); sem nome guardado e sem modelo, o bloco do nome some da tela. A tela se chama "Este aparelho" e fica dentro de Configurações ([anatomia](../design/proposta-de-anatomia.md) §4.4.2 e §7, item 8). Implementado em `src/storage/settings.ts` e `src/controllers/pairing.ts`.
 - **RF-1.3** O usuário pode **recriar a identidade do aparelho**, com confirmação que avisa que todos os pareamentos serão perdidos; o app apaga a chave e a lista de desktops.
 
 ### Parear
@@ -31,6 +33,8 @@ Antes de qualquer coisa, o celular precisa saber **qual desktop** acessar, **por
 - **RF-1.8** O app conecta ao relay, faz o handshake `XX` e **confere a chave do desktop contra a do QR**. Diferente: aborta, sem mandar nada, e mostra um erro de identidade que diz claramente que o desktop não é quem o QR dizia ser.
 - **RF-1.9** Enquanto o desktop pede confirmação, o app mostra a **impressão digital deste aparelho** com a instrução de compará-la com a que aparece no desktop, e um indicador de espera de até 120 s.
 - **RF-1.10** Resultado: `pair-accepted` → o desktop entra na lista com o nome que veio do desktop, e o app abre o workspace dele na mesma sessão; `pair-rejected` → mensagem pelo motivo (`token-invalid`: "o QR expirou ou já foi usado, gere outro"; `user-declined`; `timeout`), e nada é gravado.
+
+  > **Decidido pelo dono em 2026-11-16:** "na mesma sessão" quer dizer o **mesmo canal**: o ciclo da conexão **adota** a sessão que o pareamento abriu e manda o `hello` nela ([handshake §3.2](https://github.com/porecatu/protocol/blob/main/docs/especificacao/02-handshake-e-pareamento.md), item 5), em vez de abrir uma conexão nova. O que o desktop mandar entre o `pair-accepted` e a adoção é guardado e processado antes do `hello`; adotar fecha a sessão viva que já houver para o mesmo desktop. Se o canal cair antes de o desktop ser gravado, o app abre o workspace pelo caminho normal. Implementado em `src/session/lifecycle.ts` (`adopt`), `src/session/sessionStore.ts` (`startAdopted`), `src/session/registry.ts` (`openPaired`), `src/net/socketHandoff.ts` e `src/controllers/pairing.ts`.
 - **RF-1.11** Parear de novo um desktop já presente na lista (mesma chave pública) **substitui** a entrada, sem duplicar.
 
 ### Lista de desktops
@@ -51,6 +55,29 @@ Antes de qualquer coisa, o celular precisa saber **qual desktop** acessar, **por
   > **Decidido pelo dono em 2026-11-16.** O app nunca tranca o usuário fora do próprio app. Implementado na máquina de estados `src/security/appLock.ts` (estado `unavailable`, `hasPersistentWarning`); o texto do aviso é a chave `app_lock.unavailable_warning` do catálogo.
 
 **Por que ligado por padrão:** o [modelo de ameaça](https://github.com/porecatu/protocol/blob/main/docs/especificacao/modelo-de-ameaca.md) aceita que um celular desbloqueado nas mãos erradas tem acesso total ao desktop até a revogação, e não há permissão por aparelho no v1. O app é, na prática, uma chave para executar comandos no computador do usuário: a fricção de um toque de biometria é pequena perto disso. Quem não quer, desliga.
+
+## Implementação (2026-11-17)
+
+As telas seguem a [anatomia](../design/proposta-de-anatomia.md) (§4.1 a §4.4). Tudo abaixo está implementado e coberto por testes automatizados em Node (`jest-expo` e `@testing-library/react-native`); **nada foi rodado num aparelho**, e nenhum requisito está verificado no sentido do [roadmap](../roadmap.md).
+
+| Requisitos | Onde |
+|---|---|
+| RF-1.1 a RF-1.3 | identidade em `src/storage/deviceIdentity.ts`, garantida na partida dos serviços (`ui/services/createServices.ts`); tela "Este aparelho" em `app/settings/device.tsx` e `ui/screens/settings/` (`DeviceScreen`, `RecreateIdentityDialog`, `fingerprintSpeech.ts`) |
+| RF-1.4 a RF-1.11 | rotas `app/pair/` (permissão e câmera, nome, espera); telas em `ui/screens/pairing/`; controlador `src/controllers/pairing.ts` sobre o fluxo puro `src/pairing/pairingFlow.ts` |
+| RF-1.5 | `ui/root/DeepLinkBridge.tsx`, `ui/root/nativeIntent.ts` (reexportado por `app/+native-intent.tsx`) e `src/controllers/appShell.ts` |
+| RF-1.12 a RF-1.16 | `app/index.tsx`, `ui/screens/desktops/` e o controlador `src/controllers/desktops.ts` |
+| RF-1.17 a RF-1.20 | `src/controllers/appShell.ts` sobre `src/security/appLock.ts`; `ui/root/` (`AppRoot`, `LockScreen`, `PrivacyCover`); interruptor em `ui/screens/settings/SettingsScreen.tsx`; `FLAG_SECURE` pelo `expo-screen-capture` na tela do terminal |
+
+Decisões tomadas na implementação, além das do RF-1.2 e do RF-1.10:
+
+- **Deep link (RF-1.5).** A URI de pareamento nunca vira parâmetro de rota: numa partida a frio o app vai para `/`, e com o app aberto fica onde está; o controlador guarda o link enquanto o app está bloqueado e o entrega uma vez, ao aparecer o conteúdo.
+- **Câmera (RF-1.4).** O `expo-camera` não distingue câmera ocupada de câmera ausente fora da web: a falha ao abrir mostra sempre o texto de câmera ocupada.
+- **Resultados do pareamento (RF-1.10).** Antes de o desktop receber o pedido, o botão é "Tentar de novo"; depois, "Ler outro código"; erro de protocolo e lista cheia só têm "Fechar". "Relay inalcançável" é o `timeout` ou a queda da conexão ainda em `connecting`.
+- **Lista (RF-1.12 a RF-1.14).** O estado da linha dá precedência ao erro sobre a presença (`rowStatus`). Tocar numa linha em erro abre o workspace (a [anatomia](../design/proposta-de-anatomia.md) só fixava online e offline); tocar numa offline tenta no lugar e navega quando o desktop responde. A faixa do RF-1.20 usa o ícone `shield-alert`.
+- **Bloqueio (RF-1.17 a RF-1.19).** O navegador só monta depois do primeiro desbloqueio: nenhuma lista nem consulta de presença antes dele. Ao voltar do segundo plano, as sessões reconectam por trás da tela de bloqueio. Falha permanente do módulo de autenticação deixa o usuário na tela de bloqueio (o lado seguro); falha ao ler o armazenamento seguro na partida deixa só o fundo neutro. Sem ícone do app ainda, a tela de bloqueio e a cobertura mostram o fundo `bg.base` (a de bloqueio, com o nome e "Bloqueado").
+- **Recriar identidade (RF-1.3).** Desbloqueio cancelado antes do diálogo não mostra aviso.
+
+O que depende de aparelho (câmera fora de foco, lanterna, a pilha de navegação real ao entrar pelo link, o teclado na tela do nome, biometria, cobertura no seletor de apps e `FLAG_SECURE`) está na dívida de verificação do [roadmap](../roadmap.md).
 
 ## Fora de escopo
 

@@ -36,6 +36,29 @@ O ADR passa a **Aceito** se, num aparelho Android intermediário de referência 
 
 Se falhar, o spike mede as alternativas abaixo na mesma bancada e o ADR é reescrito com o vencedor.
 
+> **Nota de implementação (2026-11-17):** a grade foi implementada como este ADR propõe, em `ui/terminal/grid/` (o mapa dos arquivos está na [arquitetura](../arquitetura.md) §4 e §6), isolada para poder ser trocada sem mexer na tela do terminal. O ADR **continua Proposto**: nada foi medido num aparelho.
+>
+> - **Item 1.** O motor é `gridEngine.ts`, em JS, na thread de JS, sem React nem Skia próprios: os valores compartilhados e o renderizador são injetados, e ele roda nos testes em Node. Segue o controlador do terminal (`src/controllers/terminalSession.ts`), mantém coerentes zoom, rolagem e forma do conteúdo e entrega ao canvas o quadro e o cursor como `SkPicture` em valores compartilhados. Um `grid-diff` não re-renderiza componente.
+> - **Item 2.** Uma gravação por linha, guardada em `lineCache.ts` enquanto o objeto da linha é o mesmo: o modelo troca o objeto de toda linha que um diff toca, então a identidade faz o papel de `dirty`. A linha vira primeiro operações de desenho puras (`lineRecording.ts`, `drawOps.ts`), testadas em Node, e `skiaPainter.ts` as grava glifo a glifo na coluna de cada célula (`col + i × width`), numa escala fixa de 12 pt que a transformação amplia ou reduz. O quadro compõe só as linhas de uma janela em volta da vista e é recomposto quando a vista chega perto da borda dela.
+> - **Item 3.** A Iosevka Fixed 400 e 500 é carregada no Skia a partir dos mesmos arquivos do chrome ([ADR-0009](0009-iosevka-fixed-embutida.md)); negrito usa a face 500, e o itálico é inclinado, porque a família embutida não tem itálico. Code point sem glifo na fonte cai nas fontes do sistema por um parágrafo de **uma célula**, centralizado e reduzido para caber, sem empurrar as colunas seguintes.
+> - **Item 4.** Box-drawing (U+2500–257F) e blocos (U+2580–259F) são formas (`boxDrawing.ts`), com os traços até a borda da célula.
+> - **Item 5.** Zoom e rolagem são uma transformação lida de valor compartilhado (`GridCanvas.tsx`). Os gestos (`useGridGestures.ts`) rodam na thread de UI ([ADR-0010](0010-gestos-animacao-e-teclado.md)) e chamam só as funções *worklet* de `src/terminal/viewport.ts`. A inércia do arrasto (*momentum*, `withDecay`) continua mesmo com "reduzir movimento": prolonga o movimento do dedo, não é transição.
+> - **Item 6.** O cursor é um `SkPicture` próprio, desenhado por cima do quadro.
+> - **Histórico.** O conteúdo tem todas as linhas de histórico que o desktop guarda. As linhas perto da vista são pedidas uma tela à frente, e a que ainda não chegou fica em branco até a página dela chegar. Na tela alternativa não há histórico.
+> - **Acessibilidade** (a dívida das consequências negativas): um elemento só, sobre o canvas, resume as últimas linhas não vazias da grade viva (`gridA11y.ts`), calculado só com leitor de tela ligado e no máximo a cada 2 s. A camada por linha continua dívida.
+>
+> Falta medir, num Android intermediário e num iPhone de duas gerações atrás, com build de release e grade 200×60:
+>
+> - os quatro alvos da tabela acima (rolagem e pinça, 30 diffs/s, snapshot completo, memória);
+> - o orçamento da thread de JS com gesto e rajada ao mesmo tempo: decifrar, decodificar, aplicar e regravar as linhas de 30 diffs/s;
+> - o `SkPicture` passado por valor compartilhado da thread de JS para a de UI;
+> - o alinhamento da Iosevka na célula e os nomes das faces nas duas plataformas;
+> - o *fallback* de emoji e CJK dentro da célula;
+> - costuras do box-drawing em zoom fracionário;
+> - a sensação dos gestos (trava de eixo, inércia, pinça).
+>
+> Algumas proporções do desenho não têm token na anatomia e esperam a revisão do dono: o polegar mínimo da barra de rolagem (3), a espessura do cursor sublinhado e barra (2× o sublinhado da fonte), o vão do tracejado (1/3), a inclinação do itálico (−0,2), os sombreamentos (25, 50 e 75%) e a espessura do traço leve do box-drawing (a do sublinhado, 0,05 em).
+
 ## Alternativas consideradas
 
 - **`<Text>` por linha, com spans aninhados.** Simples e sem dependência nativa. Plausível para grades pequenas. Rejeitado como primeira opção: cada diff passa pelo reconciliador e pelo layout de texto nativo, e o alinhamento de coluna depende da fonte da plataforma; é a alternativa de reserva que o spike mede.

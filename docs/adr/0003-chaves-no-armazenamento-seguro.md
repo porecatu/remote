@@ -26,6 +26,8 @@ O [modelo de ameaça](https://github.com/porecatu/protocol/blob/main/docs/especi
 5. **Recriar identidade** apaga os dois itens.
 
 > **Nota de implementação (2026-11-16):** o código guarda um **terceiro** item no mesmo armazenamento e com a mesma acessibilidade: `settings.v1`, as configurações do app (idioma, bloqueio, vibração da campainha), para que nada persistente do app fique fora do Secure Store. O conjunto de itens é fechado no tipo `SecureStoreKey` de `src/storage/secureStore.ts` (`device.static_key`, `desktops.v1`, `settings.v1`), e a lista de desktops tem teto de 20 entradas (`MAX_DESKTOPS` em `src/storage/desktopList.ts`). `android.allowBackup = false` está em `app.config.ts`.
+>
+> **Nota de implementação (2026-11-17):** o documento de `settings.v1` passou ao **esquema 2** (`src/storage/settings.ts`): `schema`, `language`, `appLock`, `bellVibration` e o novo `deviceName`, o nome do aparelho do último pareamento concluído ([PRD-001](../prd/prd-001-desktops-e-pareamento.md) RF-1.2), já normalizado pela regra do pareamento (até 64 bytes de UTF-8), ou `null` antes do primeiro pareamento. **O nome do item não mudou**: a migração é interna, pelo campo `schema` do documento, e não pela versão no nome. Um documento no esquema 1 é migrado na leitura (`deviceName: null`) e gravado no esquema 2 na próxima mudança. A validação continua estrita: chave desconhecida, esquema desconhecido ou tipo errado descartam o documento inteiro, e o app usa os padrões.
 
 ## Alternativas consideradas
 

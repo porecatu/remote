@@ -2,14 +2,14 @@
 
 App mobile (Android e iOS) para acessar uma sessão viva do [Porecatu](https://github.com/porecatu/terminal) — o emulador de terminal de desktop focado em gestão de muitos terminais — a partir do celular.
 
-Com o Porecatu Remote você:
+O Porecatu Remote é feito para você:
 
-- vê as janelas, grupos, abas fixadas, abas e painéis do seu desktop, ao vivo;
-- abre uma aba e acompanha a saída dela em tempo real, com zoom e rolagem do histórico;
-- digita na aba, com uma barra de teclas especiais (`Ctrl`, `Alt`, `Esc`, `Tab`, setas, `F1`–`F12`);
-- cria e fecha abas, renomeia, move entre grupos e entre janelas, cria e organiza grupos.
+- ver as janelas, grupos, abas fixadas, abas e painéis do seu desktop, ao vivo;
+- abrir uma aba e acompanhar a saída dela em tempo real, com zoom e rolagem do histórico;
+- digitar na aba, com uma barra de teclas especiais (`Ctrl`, `Alt`, `Esc`, `Tab`, setas, `F1`–`F12`);
+- criar e fechar abas, renomear, mover entre grupos e entre janelas, criar e organizar grupos.
 
-> **Estado:** em desenvolvimento, **ainda sem telas**. A camada de lógica está implementada e testada em Node (conexão e reconexão, pareamento, armazenamento seguro, bloqueio do app, árvore do workspace, modelo da grade, input, ações sobre abas e o catálogo `en_US`/`pt_BR`), com um desktop falso para desenvolvimento (`pnpm fake-host`). As telas aguardam o aval visual da [proposta de anatomia](docs/design/proposta-de-anatomia.md), e o render da grade, o spike do [ADR-0002](docs/adr/0002-render-da-grade-com-skia.md). Nada foi rodado num aparelho ainda. O caminho até a primeira versão, e o que falta verificar, está no [roadmap](docs/roadmap.md); o que entrou, no [CHANGELOG](CHANGELOG.md).
+> **Estado:** em desenvolvimento, **nunca rodado num aparelho**. A lógica e as telas estão implementadas e testadas só em Node: lista de desktops, pareamento pelo QR ou por link, bloqueio do app e cobertura de privacidade, Configurações, a árvore do workspace com busca, o terminal com a grade desenhada em Skia, a barra de teclas e o colar, e os menus, folhas e confirmações da gestão de abas, nos idiomas `en_US` e `pt_BR`. Há um desktop falso para desenvolvimento (`pnpm fake-host`). Ainda não foi feito o *development build*, nem a medição do render em aparelho do [ADR-0002](docs/adr/0002-render-da-grade-com-skia.md); gestos, teclados, câmera e leitor de tela ainda não foram testados de verdade, e o app ainda não falou com um Porecatu real. O caminho até a primeira versão, e o que falta verificar, está no [roadmap](docs/roadmap.md); o que entrou, no [CHANGELOG](CHANGELOG.md).
 
 ## Como funciona
 
@@ -24,6 +24,7 @@ Porecatu desktop  <-- wss -->  Porecatu Relay  <-- wss -->  Porecatu Remote
 - O **relay é cego**: tudo que é terminal, tecla ou nome de aba viaja cifrado de ponta a ponta. Você hospeda o seu ([Porecatu Relay](https://github.com/porecatu/relay)).
 - **Sem contas**: o celular se pareia com o desktop lendo um QR code na tela de configurações do Porecatu, e o desktop pede confirmação. Um mesmo celular pode ter vários desktops pareados.
 - O **tamanho do terminal é o do desktop**: o app ajusta zoom e rola na horizontal, nunca redimensiona o terminal de quem está na frente do computador.
+- **Abrir uma aba no celular a mostra também no desktop**, na janela dela, como se você a tivesse clicado lá; o app nunca muda o painel focado nem traz a janela do desktop para a frente.
 
 O protocolo entre as partes está especificado no repositório [porecatu/protocol](https://github.com/porecatu/protocol).
 

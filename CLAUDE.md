@@ -6,11 +6,14 @@ Guia operacional do projeto. Leia antes de mexer em qualquer coisa.
 
 **Porecatu Remote** — app mobile (Android e iOS), em Expo/React Native e TypeScript, que se conecta a um [Porecatu](https://github.com/porecatu/terminal) desktop através de um [Porecatu Relay](https://github.com/porecatu/relay) auto-hospedado, para ver e controlar a sessão viva do desktop: workspace (janelas, grupos, fixadas, abas, painéis), grade do terminal, input e gestão de abas.
 
-**Estado (2026-11-16):** **só a camada de lógica, nenhuma tela** — decisão do dono para a implementação inicial. Expo SDK 58, TypeScript 6.0.3, `zustand` *vanilla*, testes com `jest-expo`: `pnpm test` roda **651 testes em 39 suítes**, todos verdes, em Node. O `@porecatu/protocol` 0.1.0 vem de `vendor/porecatu-protocol-0.1.0.tgz` (tarball gerado no repositório do protocolo; vira dependência publicada depois). O mapa de módulos está na [arquitetura §1](docs/arquitetura.md); o que entrou, no [CHANGELOG](CHANGELOG.md).
+**Estado (2026-11-17):** **camada de lógica e telas**, implementadas e verificadas **só em Node**; nada foi rodado num aparelho. Expo SDK 58, TypeScript 6.0.3, `zustand` *vanilla*, testes com `jest-expo` e `@testing-library/react-native`: `pnpm test` roda **1593 testes em 129 suítes**, todos verdes, e `pnpm typecheck` e `pnpm lint` estão limpos. O app segue a **especificação 0.4** do protocolo (fio `[0, 1]`). O `@porecatu/protocol` 0.1.0 vem de `vendor/porecatu-protocol-0.1.0.tgz` (tarball gerado no repositório do protocolo, regerado para a 0.4 sem mudar de nome nem de versão; vira dependência publicada depois). O mapa de módulos e de rotas está na [arquitetura §1](docs/arquitetura.md); o que entrou, no [CHANGELOG](CHANGELOG.md).
 
-- **Implementado e verificado só por teste automatizado em Node:** conexão (socket do relay, ciclo da sessão, reconexão, presença), store por desktop e registro, pareamento e *deep link*, armazenamento seguro, identidade, lista de desktops e configurações, bloqueio do app, seletores e busca da árvore, expansão local de grupos, modelo da grade, scrollback, resolução de cor, input (modificadores, barra, colar, envio), as 13 ações, pedidos pendentes e confirmações, catálogo `en_US`/`pt_BR`, logger. E o desktop falso `tools/fake-host/` (`pnpm fake-host`).
-- **Dívida de verificação** (detalhe no [roadmap](docs/roadmap.md)): telas; protótipo de render com Skia em aparelho (o [ADR-0002](docs/adr/0002-render-da-grade-com-skia.md) segue Proposto); app em aparelho real contra o desktop falso; *development build*, build EAS e lojas; módulos nativos de verdade (testados só por trás de interfaces injetadas); a ligação de `SubscriptionSet`, `InputSender`, pareamento, presença e bloqueio ao store de sessão, que entra com as telas.
-- A [proposta de anatomia](docs/design/proposta-de-anatomia.md) das telas **aguarda o aval visual do dono**: nenhuma tela é implementada e nenhum valor dela vale até a aprovação.
+- **Implementado e verificado só por teste automatizado em Node:**
+  - **Lógica** (`src/`): conexão (socket do relay, ciclo da sessão, reconexão, presença), store por desktop e registro, adoção da sessão do pareamento, pareamento e *deep link*, armazenamento seguro, identidade, lista de desktops e configurações, bloqueio do app, seletores e busca da árvore, expansão local de grupos, modelo da grade, scrollback, resolução de cor, janela do terminal (zoom e rolagem, `src/terminal/`), input (modificadores, barra, colar, envio), as 14 ações, pedidos pendentes e confirmações, catálogo `en_US`/`pt_BR`, logger; e os controladores que ligam tudo isso às telas (`src/controllers/`).
+  - **Telas** (`app/` e `ui/`): raiz (bloqueio, cobertura de privacidade, *deep link*), lista de desktops, pareamento, Configurações e Este aparelho, workspace, terminal (grade Skia, barra de teclas, colar), folhas e menus de gestão de abas, diálogos e avisos.
+  - O desktop falso `tools/fake-host/` (`pnpm fake-host`).
+- **Dívida de verificação** (detalhe no [roadmap](docs/roadmap.md)): o app num aparelho real, contra o desktop falso e contra um Porecatu; o spike de medição do Skia em aparelho (o [ADR-0002](docs/adr/0002-render-da-grade-com-skia.md) segue Proposto, embora a grade esteja implementada); *development build*, build EAS e lojas; módulos nativos de verdade (testados só por trás de serviços injetados e mocks); gestos e teclado reais (pinça, rolagem, folhas, teclados de terceiros, IME); `FLAG_SECURE` e a cobertura no seletor de apps; leitor de tela (TalkBack, VoiceOver).
+- A [anatomia das telas](docs/design/proposta-de-anatomia.md) foi **aprovada pelo dono em 2026-11-16** e é a especificação das telas implementadas. O que ela não fixava e a implementação escolheu está listado nela, em "Escolhas da implementação a confirmar", à espera do aval do dono.
 - **Provisórios** em `app.config.ts`: o identificador `br.com.porecatu.remote` e os textos das permissões nativas.
 
 ## O contrato vem de fora
@@ -29,7 +32,7 @@ Regras que decorrem disso:
 
 1. **O desktop é a fonte da verdade.** O app não guarda estado de workspace entre sessões nem interpreta VT: recebe árvore e grade, desenha, e pede ações.
 2. **O desktop dita o tamanho.** O app nunca redimensiona o PTY; adapta zoom e rolagem horizontal.
-3. **O app não muda o foco do desktop.** Ver uma aba no celular não ativa aquela aba no computador.
+3. **O app só muda a aba ativa, como o gesto local; nunca o painel focado nem a janela do sistema** ([especificação 0.4](https://github.com/porecatu/protocol/blob/main/docs/adr/0010-aba-ativa-pelo-cliente.md)). Abrir uma aba no terminal do app manda `activate-tab` uma vez por abertura, sem aviso na falha, e o desktop passa a mostrar a mesma aba na janela dela; as ações ativam como o gesto local (`new-tab`, expandir grupo, mover para janela). O app nunca manda ação que mude o `focused` de uma aba nem levante a janela do sistema.
 4. **Input é semântico.** O app manda tecla nomeada + modificadores, texto e colar; quem codifica em bytes é o desktop.
 5. **Perguntas de SSH (senha, chave do servidor) são respondidas só no desktop** no v1: o app mostra o painel em `connecting` e avisa.
 6. **Nenhuma prosa no fio.** Erros chegam como `error-code`; o texto que o usuário lê é composto aqui, pelo catálogo.
@@ -42,7 +45,7 @@ Cada item tem ADR em [docs/adr/](docs/adr/0000-template.md). Não troque nenhum 
 |---|---|---|
 | Framework | **Expo** (SDK pinado em versão exata), React Native, motor **Hermes**, desenvolvimento por *development build* e build por EAS | [0001](docs/adr/0001-expo-e-typescript.md) |
 | Linguagem | **TypeScript** em modo `strict`, sem `any` implícito | [0001](docs/adr/0001-expo-e-typescript.md) |
-| Render da grade | `@shopify/react-native-skia` — **Proposto**, pendente do spike | [0002](docs/adr/0002-render-da-grade-com-skia.md) |
+| Render da grade | `@shopify/react-native-skia` — **Proposto**: implementado em `ui/terminal/grid/`, pendente da medição em aparelho | [0002](docs/adr/0002-render-da-grade-com-skia.md) |
 | Chaves | `expo-secure-store` (Keychain no iOS, Keystore no Android) | [0003](docs/adr/0003-chaves-no-armazenamento-seguro.md) |
 | Protocolo e cripto | `@porecatu/protocol`, que usa `@noble/*` e um codificador CBOR próprio — **JS puro, nenhum módulo nativo próprio** | [0004](docs/adr/0004-criptografia-em-js-puro.md) |
 | Estado | `zustand` na forma *vanilla* (`zustand/vanilla`), um store por desktop aberto, fora do React | [0001](docs/adr/0001-expo-e-typescript.md) item 7 |
@@ -51,6 +54,10 @@ Cada item tem ADR em [docs/adr/](docs/adr/0000-template.md). Não troque nenhum 
 | Textos | Catálogo de mensagens próprio, `en_US` padrão e `pt_BR` | [0005](docs/adr/0005-catalogo-de-textos-e-idiomas.md) |
 | Licença | GPL-3.0-or-later com DCO | [0006](docs/adr/0006-licenca-gpl-e-lojas.md) |
 | Toolchain | Node, gerenciador de pacotes e Expo SDK pinados | [0007](docs/adr/0007-toolchain-pinada.md) |
+| Ícones | Lucide pelo `lucide-react-native` sobre `react-native-svg`, importado ícone a ícone, nunca pelo índice | [0008](docs/adr/0008-icones-lucide-em-svg.md) |
+| Fonte mono | Iosevka Fixed 400/500, as faces recortadas do desktop, embutidas pelo *config plugin* do `expo-font`; o chrome usa a fonte do sistema | [0009](docs/adr/0009-iosevka-fixed-embutida.md) |
+| Gestos, animação e teclado | `react-native-gesture-handler`, `react-native-reanimated` (com `react-native-worklets`) e `react-native-keyboard-controller`, nas versões do SDK | [0010](docs/adr/0010-gestos-animacao-e-teclado.md) |
+| Folhas, diálogos e avisos | Componentes próprios numa camada do `app/_layout.tsx`, sem `Modal` e sem biblioteca de folhas | [0011](docs/adr/0011-folhas-dialogos-e-avisos-proprios.md) |
 
 ## Comandos
 
@@ -113,9 +120,10 @@ Correção de erro factual ou de clareza é permitida; mudança de decisão, nã
 
 ## Aparência
 
-- **Nenhuma tela sem aval visual do dono do produto.** Não há especificação visual aprovada: a [proposta de anatomia](docs/design/proposta-de-anatomia.md) **aguarda o aval** ([docs/design/](docs/design/README.md)). Até lá, `app/` só tem o `_layout.tsx` sem conteúdo visual.
+- **Nenhuma tela sem aval visual do dono do produto.** A [anatomia das telas](docs/design/proposta-de-anatomia.md) tem o aval (2026-11-16) e é a especificação: as telas seguem a anatomia, os gestos e os textos de lá. Tela nova ou mudança visível numa tela aprovada passa pelo dono antes ([docs/design/](docs/design/README.md)).
 - **A grade usa o tema do desktop** (mensagem `theme`): fundo, frente, cursor, seleção, as 16 cores e a paleta de grupos vêm de lá. O app não inventa paleta de terminal.
-- Nenhuma cor, dimensão ou espaçamento do chrome do app é inventado no código: sai de tokens definidos em `docs/design/` quando eles existirem.
+- Nenhuma cor, dimensão ou espaçamento do chrome do app é inventado no código: sai dos tokens da anatomia (§2). Valor que falte lá entra primeiro na anatomia.
+- **A cobertura de privacidade fica acima de tudo**: nenhuma folha, diálogo ou aviso usa `Modal` do React Native, que abriria uma janela nativa por cima dela ([ADR-0011](docs/adr/0011-folhas-dialogos-e-avisos-proprios.md)).
 
 ## Armadilhas conhecidas
 
@@ -130,6 +138,12 @@ Correção de erro factual ou de clareza é permitida; mudança de decisão, nã
 - **Coluna de caractere sem segmentar grafemas**: o *i*-ésimo code point de um span comum está em `col + i × width`; grafema de vários code points vem sozinho num span. O Hermes não tem `Intl.Segmenter` confiável — não dependa dele.
 - **Ids do protocolo reiniciam quando o Porecatu reinicia.** Nunca persistir `tab-id`/`pane-id` entre sessões como se fossem estáveis.
 - **App em segundo plano**: o sistema operacional derruba o WebSocket. Ao voltar, reconectar e reconstruir tudo a partir do `workspace` e de novos `grid-snapshot`; nunca supor que o estado antigo continua valendo.
+- **Nunca `Modal`** do React Native: folhas, diálogos e avisos passam pela camada de `ui/overlay/` ([ADR-0011](docs/adr/0011-folhas-dialogos-e-avisos-proprios.md)), por baixo da cobertura de privacidade. O lint reprova o import.
+- **A URI de pareamento nunca vira parâmetro de rota.** O `app/+native-intent.tsx` (`ui/root/nativeIntent.ts`) não deixa o `expo-router` abrir `/pair` com o token de uso único nos parâmetros, nem por baixo do bloqueio: a partida a frio vai para `/`, e com o app aberto a tela fica. O link chega ao fluxo só pelo `DeepLinkBridge`, depois do desbloqueio. Não remova o arquivo nem leia o token de `useLocalSearchParams`.
+- **`activate-tab` é ação de fundo** (`isBackgroundAction` em `src/session/actions.ts`): não marca item como pendente, e falha ou perda na queda não viram aviso. Ação nova que o app mande sozinho, sem pedido do usuário, entra ali; ação pedida pelo usuário nunca.
+- **`useInputRefusalToasts` é montado uma única vez**, na tela do terminal: cada montagem assina os eventos `input-refused` do controlador, e uma segunda daria avisos em dobro.
+- **Módulos nativos só pelos serviços** (`ui/services/`): telas e controladores recebem `useServices()` (ou dependências injetadas), e só `nativeServices.ts` importa `expo-clipboard`, `expo-haptics`, `expo-screen-capture` e afins. É o que deixa as telas testáveis em Node com `createTestServices()`.
+- **Testes de tela com o `@testing-library/react-native` 14**: `render` e `fireEvent` são **assíncronos** — sempre `await render(...)`/`await renderWithServices(...)` e `await fireEvent...`, senão o teste falha com "overlapping act()". Os ícones Lucide saem com `aria-hidden`, então consulta por `testID` de ícone pede `{ includeHiddenElements: true }`. No mock do Skia o `Canvas` não pinta, mas a API `Skia.*` roda sobre o CanvasKit; o `SkPath` é imutável (use `Skia.PathBuilder`) e `useFont` devolve fonte vazia. Os mocks estão em `test/setup/`.
 
 ## Índice
 
@@ -138,4 +152,4 @@ Correção de erro factual ou de clareza é permitida; mudança de decisão, nã
 - [docs/adr/](docs/adr/0000-template.md) — decisões arquiteturais
 - [docs/roadmap.md](docs/roadmap.md) — marcos e dívida de verificação
 - [CHANGELOG.md](CHANGELOG.md) — o que entrou
-- [docs/design/](docs/design/README.md) — registro visual; a [proposta de anatomia](docs/design/proposta-de-anatomia.md) aguarda aval
+- [docs/design/](docs/design/README.md) — registro visual; a [anatomia das telas](docs/design/proposta-de-anatomia.md), aprovada

@@ -35,7 +35,9 @@ Três apostas:
 
 1. **A organização viaja.** O valor do Porecatu é saber qual terminal é qual. O app herda isso: o usuário acha a aba pelo grupo e pelo nome, não por uma lista de PIDs.
 2. **Seguro sem esforço.** Parear é ler um QR code e confirmar no desktop. Ninguém no caminho — nem quem opera o relay — lê o terminal.
-3. **O desktop continua mandando.** O celular olha e age sem atrapalhar quem está no computador: não muda o tamanho do terminal, não rouba o foco, não mexe na rolagem.
+3. **O desktop continua mandando.** O celular olha e age sem atrapalhar quem está no computador: não muda o tamanho do terminal, não mexe na rolagem, não muda o painel focado nem a janela do sistema. Como o gesto local, ele pode trocar a aba ativa de uma janela: abrir uma aba no app a ativa no desktop, e as ações ativam o que o gesto local ativaria.
+
+   > **Revisão (2026-11-17, especificação 0.4):** a versão aprovada dizia "não rouba o foco". O dono decidiu que o celular pode mudar a aba ativa do desktop ([ADR-0010 do protocolo](https://github.com/porecatu/protocol/blob/main/docs/adr/0010-aba-ativa-pelo-cliente.md)); o painel focado e a janela do sistema operacional continuam fora do alcance do app ([PRD-002](prd-002-navegacao-do-workspace.md), [PRD-003](prd-003-terminal.md) RF-3.26, [PRD-004](prd-004-gestao-de-abas.md)).
 
 ## Usuário-alvo
 
@@ -46,7 +48,7 @@ O usuário do Porecatu que deixa processos longos rodando e quer acompanhá-los 
 ## Princípios
 
 1. **O desktop é a fonte da verdade.** O app não guarda estado de workspace; tudo que mostra veio do desktop há instantes.
-2. **Nada do que o app faz surpreende quem está no desktop.** Sem redimensionar, sem trocar foco, e com um indicador visível no Porecatu enquanto o celular está conectado.
+2. **Nada do que o app faz surpreende quem está no desktop.** Sem redimensionar, sem mudar o painel focado nem levantar a janela do sistema, e com um indicador visível no Porecatu enquanto o celular está conectado. A troca de aba ativa que o app faz é a mesma do gesto local (especificação 0.4, revisão acima).
 3. **Ver é barato, agir é deliberado.** Navegar e acompanhar é imediato; fechar uma aba com processo rodando pede confirmação, como no desktop.
 4. **Nunca vazar.** Nada de conteúdo de terminal em log, em notificação, em captura do seletor de apps do sistema.
 5. **Offline é um estado normal**, não um erro: o desktop desligado ou o Porecatu fechado aparecem como tal.

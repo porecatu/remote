@@ -11,6 +11,10 @@
 | [0005](0005-catalogo-de-textos-e-idiomas.md) | Catálogo de textos da interface, `en_US` padrão e `pt_BR` | Aceito |
 | [0006](0006-licenca-gpl-e-lojas.md) | GPL-3.0-or-later com DCO e o risco das lojas | Aceito |
 | [0007](0007-toolchain-pinada.md) | Toolchain pinada: Node, gerenciador de pacotes, Expo SDK e dependências exatas | Aceito |
+| [0008](0008-icones-lucide-em-svg.md) | Ícones Lucide em SVG, por `lucide-react-native` | Aceito |
+| [0009](0009-iosevka-fixed-embutida.md) | Iosevka Fixed embutida, com as faces recortadas do desktop | Aceito |
+| [0010](0010-gestos-animacao-e-teclado.md) | Gestos, animação e teclado: Gesture Handler, Reanimated e Keyboard Controller | Aceito |
+| [0011](0011-folhas-dialogos-e-avisos-proprios.md) | Folhas, diálogos e avisos próprios, desenhados dentro da janela do app | Aceito |
 
 ## Convenção
 
