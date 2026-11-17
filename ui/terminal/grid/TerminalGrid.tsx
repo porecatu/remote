@@ -305,7 +305,10 @@ export function TerminalGrid({
   const verticalThumb = useAnimatedStyle(() => {
     const content = contentSize(cols.value, liveRows.value, historyRows.value, fontSize.value);
     const limit = maxScroll(content, { width: viewWidth.value, height: viewHeight.value }).scrollTop;
-    const track = Math.max(0, viewHeight.value + paddingTop.value - 2 * spacing.scrollbarInset);
+    const track = Math.max(
+      0,
+      viewHeight.value + paddingTop.value + size.gridPaddingBottom - 2 * spacing.scrollbarInset,
+    );
     if (!(limit > 0) || !(content.height > 0)) {
       return { opacity: 0, height: 0, transform: [{ translateY: 0 }] };
     }
@@ -316,7 +319,7 @@ export function TerminalGrid({
   const horizontalThumb = useAnimatedStyle(() => {
     const content = contentSize(cols.value, liveRows.value, historyRows.value, fontSize.value);
     const limit = maxScroll(content, { width: viewWidth.value, height: viewHeight.value }).scrollX;
-    const track = Math.max(0, viewWidth.value - 2 * spacing.scrollbarInset);
+    const track = Math.max(0, viewWidth.value + 2 * size.gridPaddingX - 2 * spacing.scrollbarInset);
     if (!(limit > 0) || !(content.width > 0)) {
       return { opacity: 0, width: 0, transform: [{ translateX: 0 }] };
     }
@@ -338,7 +341,10 @@ export function TerminalGrid({
 
   const onLayout = (event: LayoutChangeEvent): void => {
     const { width, height } = event.nativeEvent.layout;
-    engine.setViewport(width, Math.max(0, height - size.gridPaddingTop));
+    engine.setViewport(
+      Math.max(0, width - 2 * size.gridPaddingX),
+      Math.max(0, height - size.gridPaddingTop - size.gridPaddingBottom),
+    );
   };
 
   const background = theme === null ? colors.bgTerminal : rgbToCss(theme.bg);
@@ -355,7 +361,7 @@ export function TerminalGrid({
       onAccessibilityTap={onTap}
     >
       <GestureDetector gesture={gesture}>
-        <Animated.View style={StyleSheet.absoluteFill} testID={`${testID}-surface`}>
+        <Animated.View style={styles.surface} testID={`${testID}-surface`}>
           <GridCanvas
             frame={frame}
             cursor={cursor}
@@ -415,6 +421,16 @@ export function TerminalGrid({
 
 const styles = StyleSheet.create({
   root: { flex: 1, overflow: "hidden" },
+  // The grid area inside the frame: the paddings keep the text off the edges.
+  // The top gap is part of the content (`paddingTop` shared value), so it is not here.
+  surface: {
+    position: "absolute",
+    top: 0,
+    left: size.gridPaddingX,
+    right: size.gridPaddingX,
+    bottom: size.gridPaddingBottom,
+    overflow: "hidden",
+  },
   verticalTrack: { position: "absolute" },
   horizontalTrack: { position: "absolute" },
   spinnerRow: { position: "absolute", left: 0, right: 0, alignItems: "center" },

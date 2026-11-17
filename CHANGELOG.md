@@ -138,6 +138,11 @@ Proposto até a medição do render em aparelho. Dívida de verificação no
 
 ### Mudado
 
+- **Folga da grade do terminal nas bordas do quadro:** tokens `grid.padding-x`
+  (8, laterais) e `grid.padding-bottom` (16, embaixo; o `grid.padding-top` subiu de 4 para 12), propostos na
+  [anatomia](docs/design/proposta-de-anatomia.md) §2.5 e **à espera do aval do
+  dono**. O viewport da grade já os desconta, então "ajustar à largura" usa a
+  largura útil; as barras de rolagem seguem rentes às bordas do quadro.
 - **Especificação 0.4 do protocolo**
   ([ADR-0010 do protocolo](https://github.com/porecatu/protocol/blob/main/docs/adr/0010-aba-ativa-pelo-cliente.md)),
   com o fio ainda `[0, 1]`: a ação nova `activate-tab` (`activateTab` em

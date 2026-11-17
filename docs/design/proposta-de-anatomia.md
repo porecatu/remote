@@ -175,7 +175,9 @@ O desktop não tem equivalente: a precisão de um dedo exige alvos maiores que o
 | `zoom-chip.height` | 28 | chip temporário de zoom (§4.7) |
 | `swatch.small` | 16 | amostra de cor na lista de Mover para grupo (§4.12.4) |
 | `thumbnail.ratio` | 16 : 10 | miniatura da disposição de painéis (§4.9) |
-| `grid.padding-top` | 4 | folga entre a barra do terminal e a primeira linha da grade |
+| `grid.padding-top` | 12 | folga entre a barra do terminal e a primeira linha da grade |
+| `grid.padding-x` | 8 | **proposta:** folga entre a grade e as bordas esquerda e direita do quadro; a largura de "ajustar à largura" já a desconta |
+| `grid.padding-bottom` | 16 | **proposta:** folga entre a última linha e a borda de baixo do quadro |
 
 ### 2.6 Espaçamentos de componente (propostos)
 

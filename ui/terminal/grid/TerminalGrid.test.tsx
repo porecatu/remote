@@ -8,9 +8,13 @@ import { fireGestureHandler, getByGestureTestId } from "react-native-gesture-han
 import { t } from "@/i18n/catalog";
 import { createZoomMemory, fitWidthFontSize, terminalMetrics } from "@/terminal/viewport";
 
+import { size } from "../../theme";
 import { type TerminalGridHandle, type TerminalGridState, TerminalGrid } from "./TerminalGrid";
 import { GRID_GESTURE_IDS } from "./useGridGestures";
 import { type FakeGridOptions, TEST_GRID_THEME, createFakeGridSession } from "./testing";
+
+// The grid area: the frame width minus the left and right paddings.
+const VIEW_WIDTH = 360 - 2 * size.gridPaddingX;
 
 async function mount(options: FakeGridOptions = {}, props: { onTap?: () => void; theme?: typeof TEST_GRID_THEME | null } = {}) {
   const fake = createFakeGridSession({ cols: 80, rows: 24, ...options });
@@ -94,7 +98,7 @@ describe("TerminalGrid", () => {
 
   it("exposes the floating-button actions and their states", async () => {
     const { ref, states, fake, memory, key } = await mount({ cols: 120, cursor: { col: 110 } });
-    expect(ref.current?.getState()).toMatchObject({ isFit: false, wide: true, atBottom: true, zoomPercent: 200 });
+    expect(ref.current?.getState()).toMatchObject({ isFit: false, wide: true, atBottom: true, zoomPercent: Math.round((terminalMetrics.readFont / fitWidthFontSize(120, VIEW_WIDTH)) * 100) });
 
     await act(async () => {
       ref.current?.setFollowCursor(true);
@@ -105,7 +109,7 @@ describe("TerminalGrid", () => {
       ref.current?.fitWidth();
     });
     expect(ref.current?.getState()).toMatchObject({ isFit: true, wide: false, zoomPercent: 100 });
-    expect(memory.get(key)).toBeCloseTo(fitWidthFontSize(120, 360));
+    expect(memory.get(key)).toBeCloseTo(fitWidthFontSize(120, VIEW_WIDTH));
     expect(memory.get(key)).toBeLessThan(terminalMetrics.minFont);
 
     await act(async () => {

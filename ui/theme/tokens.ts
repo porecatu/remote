@@ -137,7 +137,11 @@ export const size = {
   /** `zoom-chip.height` (§4.7). */
   zoomChipHeight: 28,
   /** `grid.padding-top`. */
-  gridPaddingTop: 4,
+  gridPaddingTop: 12,
+  /** `grid.padding-x`: gap between the grid and the left and right edges of the frame. */
+  gridPaddingX: 8,
+  /** `grid.padding-bottom`: gap between the last row and the bottom edge of the frame. */
+  gridPaddingBottom: 16,
 } as const;
 
 /** §2.5 Terminal font limits, in points, and line height as a factor of the font. */
