@@ -12,11 +12,18 @@ const config: ExpoConfig = {
   version: "0.0.0",
   platforms: ["ios", "android"],
   userInterfaceStyle: "automatic",
+  icon: "./assets/icon/icon.png",
   ios: {
     bundleIdentifier: "br.com.porecatu.remote",
   },
   android: {
     package: "br.com.porecatu.remote",
+    // Same artwork as the desktop; the background is the dark `bg.base` token.
+    adaptiveIcon: {
+      foregroundImage: "./assets/icon/adaptive-foreground.png",
+      monochromeImage: "./assets/icon/adaptive-monochrome.png",
+      backgroundColor: "#171b21",
+    },
     // The static key lives in the Keystore (ADR-0003); never back it up.
     allowBackup: false,
   },
