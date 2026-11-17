@@ -124,6 +124,18 @@ Proposto até a medição do render em aparelho. Dívida de verificação no
   (363 chaves), tempo relativo escrito à mão (`src/i18n/relativeTime.ts`) e a
   mensagem para input recusado por tamanho (RF-3.25).
 
+### Corrigido
+
+- **Terminal em branco ao abrir uma aba parada** (só aparecia com saída nova ou
+  ao girar o aparelho). O Reanimated 4 grava um *shared value* da thread JS de
+  forma assíncrona e a leitura JS devolve o valor antigo até a UI thread
+  aplicar a escrita; o motor da grade (`ui/terminal/grid/gridEngine.ts`)
+  escrevia `cols`/`viewWidth` e lia de volta na mesma chamada, nunca escolhia o
+  zoom e não compunha o quadro. Agora o motor lê de uma cópia JS do estado da
+  vista e os *shared values* são só saída; o que o gesto move na UI thread
+  chega por argumento (`viewChanged`, `zoomed`, `settled`). Teste com caixas
+  que imitam o atraso (`deferredBox`). **Falta confirmar em aparelho.**
+
 ### Mudado
 
 - **Especificação 0.4 do protocolo**

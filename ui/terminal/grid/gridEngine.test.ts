@@ -3,7 +3,7 @@ import { cellMetrics, createZoomMemory, fitWidthFontSize, terminalMetrics } from
 
 import { type Box, type EngineValues, type TerminalGridState, createGridEngine } from "./gridEngine";
 import type { RenderSource, RowWindow } from "./gridRenderer";
-import { type FakeGridOptions, createFakeGridSession } from "./testing";
+import { type DeferredBox, type FakeGridOptions, createFakeGridSession, deferredBox } from "./testing";
 
 const box = <T,>(value: T): Box<T> => ({ value });
 
@@ -40,7 +40,7 @@ function setup(options: FakeGridOptions = {}, view = { width: 360, height: 400 }
   const memory = createZoomMemory();
   const key = { desktopId: "d", hostInstance: "00", tabId: 1 };
   const timers: (() => void)[] = [];
-  const engine = createGridEngine<string>({
+  const real = createGridEngine<string>({
     session: fake,
     values,
     frame: box(""),
@@ -55,6 +55,14 @@ function setup(options: FakeGridOptions = {}, view = { width: 360, height: 400 }
     },
     clearTimer: () => undefined,
   });
+  // The boxes play the UI thread: what a gesture moved there is what the engine is told.
+  const ui = () => ({ fontSize: values.fontSize.value, scrollX: values.scrollX.value, scrollTop: values.scrollTop.value });
+  const engine = {
+    ...real,
+    viewChanged: () => real.viewChanged(ui()),
+    zoomed: (percent: number) => real.zoomed(percent, ui()),
+    settled: (gesture: "pan" | "pinch") => real.settled(gesture, ui()),
+  };
   engine.setRenderer(renderer);
   engine.setViewport(view.width, view.height);
   engine.start();
@@ -215,5 +223,115 @@ describe("grid engine: follow the cursor (RF-3.8)", () => {
     expect(values.scrollX.value).toBeLessThanOrEqual(9 * cw);
     engine.followStopped();
     expect(engine.getState().followingCursor).toBe(false);
+  });
+});
+
+// Reanimated 4 writes a shared value from the JS thread asynchronously and reads
+// return the old value until the UI thread applied it. A terminal that opens
+// idle gets one layout and one snapshot and nothing after them.
+describe("grid engine: shared values that lag the JS thread", () => {
+  interface LaggingValues extends EngineValues {
+    readonly fontSize: DeferredBox<number>;
+    readonly scrollX: DeferredBox<number>;
+    readonly scrollTop: DeferredBox<number>;
+    readonly viewWidth: DeferredBox<number>;
+    readonly viewHeight: DeferredBox<number>;
+    readonly cols: DeferredBox<number>;
+    readonly liveRows: DeferredBox<number>;
+    readonly historyRows: DeferredBox<number>;
+    readonly following: DeferredBox<boolean>;
+  }
+
+  function lagging(options: FakeGridOptions = {}) {
+    const fake = createFakeGridSession(options);
+    const values: LaggingValues = {
+      fontSize: deferredBox(0),
+      scrollX: deferredBox(0),
+      scrollTop: deferredBox(0),
+      viewWidth: deferredBox(0),
+      viewHeight: deferredBox(0),
+      paddingTop: box(4),
+      cols: deferredBox(0),
+      liveRows: deferredBox(0),
+      historyRows: deferredBox(0),
+      following: deferredBox(false),
+    };
+    const frames: RowWindow[] = [];
+    const frame = box("");
+    const renderer = {
+      frame: (_source: RenderSource, window: RowWindow) => {
+        frames.push(window);
+        return "frame";
+      },
+      cursor: () => "cursor",
+      missingHistory: () => 0,
+    };
+    const engine = createGridEngine<string>({
+      session: fake,
+      values,
+      frame,
+      cursor: box(""),
+      zoomMemory: createZoomMemory(),
+      zoomKey: () => null,
+      zoomChipMs: 1000,
+      publish: () => undefined,
+    });
+    const flush = () => {
+      for (const shared of Object.values(values)) {
+        if ("flush" in shared) shared.flush();
+      }
+    };
+    return { fake, values, engine, frames, frame, renderer, flush };
+  }
+
+  it("draws an idle terminal once the layout and the snapshot are in (layout first)", () => {
+    const { values, engine, frames, frame, renderer, flush } = lagging({ cols: 80, rows: 24 });
+    engine.setRenderer(renderer);
+    engine.setViewport(360, 400);
+    engine.start();
+    // Nothing else happens: no diff, no rotation, and no read sees a write before the flush.
+    flush();
+    expect(frames.length).toBeGreaterThan(0);
+    expect(frame.value).toBe("frame");
+    expect(values.fontSize.value).toBeCloseTo(fitWidthFontSize(80, 360));
+  });
+
+  it("draws an idle terminal once the layout and the snapshot are in (snapshot first)", () => {
+    const { values, engine, frames, renderer, flush } = lagging({ cols: 80, rows: 24 });
+    engine.setRenderer(renderer);
+    engine.start();
+    engine.setViewport(360, 400);
+    flush();
+    expect(frames.length).toBeGreaterThan(0);
+    expect(values.fontSize.value).toBeCloseTo(fitWidthFontSize(80, 360));
+    expect(values.scrollTop.value).toBeGreaterThanOrEqual(0);
+  });
+
+  it("keeps the view at the end of the live grid when it opens", () => {
+    const { values, engine, renderer, flush } = lagging({ cols: 80, rows: 24, history: 100 });
+    engine.setRenderer(renderer);
+    engine.setViewport(360, 400);
+    engine.start();
+    flush();
+    const lh = cellMetrics(values.fontSize.value).lineHeight;
+    expect(values.scrollTop.value).toBeCloseTo(Math.max(0, 124 * lh - 400));
+  });
+
+  it("takes the scroll a gesture made on the UI thread, momentum included", () => {
+    const { fake, values, engine, renderer, flush } = lagging({ cols: 80, rows: 24, history: 1000 });
+    engine.setRenderer(renderer);
+    engine.setViewport(360, 400);
+    engine.start();
+    flush();
+    // A fling on the UI thread: the JS thread only learns of it through the report.
+    values.scrollTop.writeOnUi(0);
+    engine.viewChanged({ fontSize: values.fontSize.value, scrollX: 0, scrollTop: 0 });
+    expect(fake.historyCalls.length).toBeGreaterThan(0);
+    expect(fake.historyCalls[fake.historyCalls.length - 1]?.[0]).toBe(999);
+    // A later change reads what the UI thread holds, not a stale copy.
+    values.scrollTop.writeOnUi(120);
+    fake.diff([[0, "x"]]);
+    flush();
+    expect(values.scrollTop.value).toBe(120);
   });
 });

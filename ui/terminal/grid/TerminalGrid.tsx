@@ -284,15 +284,19 @@ export function TerminalGrid({
         previous !== null &&
         (current.row !== previous.row || current.bottom !== previous.bottom || current.font !== previous.font)
       ) {
-        scheduleOnRN(viewChanged);
+        scheduleOnRN(viewChanged, {
+          fontSize: current.font,
+          scrollX: scrollX.value,
+          scrollTop: scrollTop.value,
+        });
       }
     },
   );
 
   const gesture = useGridGestures(values, {
     onTap,
-    onZoom: (percent) => engine.zoomed(percent),
-    onSettle: (kind) => engine.settled(kind),
+    onZoom: (percent, ui) => engine.zoomed(percent, ui),
+    onSettle: (kind, ui) => engine.settled(kind, ui),
     onFollowStopped: () => engine.followStopped(),
   });
 

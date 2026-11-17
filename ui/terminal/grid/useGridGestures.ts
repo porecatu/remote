@@ -37,6 +37,8 @@ import {
   zoomPercent,
 } from "@/terminal/viewport";
 
+import type { UiView } from "./gridEngine";
+
 /** The view state the gestures move, shared with the canvas and the grid. */
 export interface GridViewValues {
   /** Font size in points (the zoom). */
@@ -60,9 +62,9 @@ export interface GridGestureCallbacks {
   /** A simple tap on the grid. */
   readonly onTap: () => void;
   /** The pinch changed the zoom percentage (100 = fit). */
-  readonly onZoom: (percent: number) => void;
+  readonly onZoom: (percent: number, ui: UiView) => void;
   /** A drag or a pinch ended (with its momentum still running, for a drag). */
-  readonly onSettle: (gesture: "pan" | "pinch") => void;
+  readonly onSettle: (gesture: "pan" | "pinch", ui: UiView) => void;
   /** A horizontal drag turned "follow the cursor" off. */
   readonly onFollowStopped: () => void;
 }
@@ -81,8 +83,8 @@ function useStableCallbacks(callbacks: GridGestureCallbacks): GridGestureCallbac
     ref.current = callbacks;
   });
   const onTap = useCallback(() => ref.current.onTap(), []);
-  const onZoom = useCallback((percent: number) => ref.current.onZoom(percent), []);
-  const onSettle = useCallback((gesture: "pan" | "pinch") => ref.current.onSettle(gesture), []);
+  const onZoom = useCallback((percent: number, ui: UiView) => ref.current.onZoom(percent, ui), []);
+  const onSettle = useCallback((gesture: "pan" | "pinch", ui: UiView) => ref.current.onSettle(gesture, ui), []);
   const onFollowStopped = useCallback(() => ref.current.onFollowStopped(), []);
   return { onTap, onZoom, onSettle, onFollowStopped };
 }
@@ -152,7 +154,7 @@ export function useGridGestures(values: GridViewValues, callbacks: GridGestureCa
     onFinalize: () => {
       "worklet";
       axis.value = "none";
-      scheduleOnRN(onSettle, "pan");
+      scheduleOnRN(onSettle, "pan", { fontSize: fontSize.value, scrollX: scrollX.value, scrollTop: scrollTop.value });
     },
   });
 
@@ -192,14 +194,18 @@ export function useGridGestures(values: GridViewValues, callbacks: GridGestureCa
       const percent = zoomPercent(next, cols.value, viewWidth.value);
       if (percent !== pinchPercent.value) {
         pinchPercent.value = percent;
-        scheduleOnRN(onZoom, percent);
+        scheduleOnRN(onZoom, percent, { fontSize: next, scrollX: scroll.scrollX, scrollTop: scroll.scrollTop });
       }
     },
     onFinalize: () => {
       "worklet";
       // A touch that never changed the zoom is not a pinch to settle.
       if (pinchPercent.value !== 0) {
-        scheduleOnRN(onSettle, "pinch");
+        scheduleOnRN(onSettle, "pinch", {
+          fontSize: fontSize.value,
+          scrollX: scrollX.value,
+          scrollTop: scrollTop.value,
+        });
       }
     },
   });

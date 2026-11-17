@@ -65,6 +65,44 @@ export interface EngineValues {
   readonly following: Box<boolean>;
 }
 
+/**
+ * The view values the gestures move on the UI thread. They reach the engine as
+ * arguments captured on that thread, never by reading the shared values back:
+ * see `ViewState`.
+ */
+export interface UiView {
+  readonly fontSize: number;
+  readonly scrollX: number;
+  readonly scrollTop: number;
+}
+
+/**
+ * The engine's own copy of the view state. Reanimated 4 writes a shared value
+ * from the JS thread asynchronously (`scheduleOnUI`) and keeps returning the
+ * old value to JS reads until the UI thread applied it, so code that writes a
+ * value and reads it back in the same call (zoom, clamp, compose) saw stale
+ * data and left an idle terminal blank. The engine reads only this copy; the
+ * shared values are its output.
+ */
+interface ViewState {
+  fontSize: number;
+  scrollX: number;
+  scrollTop: number;
+  viewWidth: number;
+  viewHeight: number;
+  cols: number;
+  liveRows: number;
+  historyRows: number;
+  following: boolean;
+}
+
+type UiKey = keyof UiView;
+const UI_KEYS: readonly UiKey[] = ["fontSize", "scrollX", "scrollTop"];
+
+function isUiKey(key: keyof ViewState): key is UiKey {
+  return key === "fontSize" || key === "scrollX" || key === "scrollTop";
+}
+
 /** The renderer as the engine uses it (see ./gridRenderer.ts). */
 export interface EngineRenderer<P> {
   frame(source: RenderSource, window: RowWindow): P;
@@ -124,12 +162,12 @@ export interface GridEngine<P> {
   setRenderer(renderer: EngineRenderer<P> | null): void;
   /** The view was laid out (`height` already without `grid.padding-top`). */
   setViewport(width: number, height: number): void;
-  /** The scroll or the zoom moved (UI-thread report, or a gesture settled). */
-  viewChanged(): void;
+  /** The scroll or the zoom moved (UI-thread report, with the values the UI thread holds). */
+  viewChanged(ui: UiView): void;
   /** The pinch reached `percent`. */
-  zoomed(percent: number): void;
+  zoomed(percent: number, ui: UiView): void;
   /** A gesture ended. */
-  settled(gesture: "pan" | "pinch"): void;
+  settled(gesture: "pan" | "pinch", ui: UiView): void;
   /** A horizontal drag turned "follow the cursor" off. */
   followStopped(): void;
   scrollToBottom(): void;
@@ -178,6 +216,47 @@ export function createGridEngine<P>(deps: GridEngineDeps<P>): GridEngine<P> {
   let unsubscribe: (() => void) | null = null;
   let disposed = false;
 
+  // Every value starts at zero (`false`) in the shared values too. `paddingTop`
+  // is read from its shared value: the engine never writes it, so it is not stale.
+  const js: ViewState = {
+    fontSize: 0,
+    scrollX: 0,
+    scrollTop: 0,
+    viewWidth: 0,
+    viewHeight: 0,
+    cols: 0,
+    liveRows: 0,
+    historyRows: 0,
+    following: false,
+  };
+
+  /**
+   * The value the engine last wrote to a UI-owned shared value (the gestures
+   * move these too) that a JS read did not yet see applied. While it is set, a
+   * read returning anything else is the old value, not a gesture's.
+   */
+  const unconfirmed: Partial<Record<UiKey, number>> = {};
+
+  /** Takes the values a gesture moved on the UI thread (the last write wins over a concurrent JS one). */
+  function adopt(ui: UiView): void {
+    for (const key of UI_KEYS) {
+      js[key] = ui[key];
+      delete unconfirmed[key];
+    }
+  }
+
+  /** Reads the UI-owned values back at the start of a JS-driven change: a gesture or its momentum may have moved them. */
+  function refreshUi(): void {
+    for (const key of UI_KEYS) {
+      const live = values[key].value;
+      const waiting = unconfirmed[key];
+      if (waiting === undefined || live === waiting) {
+        js[key] = live;
+        delete unconfirmed[key];
+      }
+    }
+  }
+
   // ------------------------------------------------------------ reading
 
   function state(): TerminalState {
@@ -208,19 +287,19 @@ export function createGridEngine<P>(deps: GridEngineDeps<P>): GridEngine<P> {
   }
 
   function lineHeight(): number {
-    return cellMetrics(values.fontSize.value).lineHeight;
+    return cellMetrics(js.fontSize).lineHeight;
   }
 
   function content() {
-    return contentSize(values.cols.value, values.liveRows.value, values.historyRows.value, values.fontSize.value);
+    return contentSize(js.cols, js.liveRows, js.historyRows, js.fontSize);
   }
 
   function view() {
-    return { width: values.viewWidth.value, height: values.viewHeight.value };
+    return { width: js.viewWidth, height: js.viewHeight };
   }
 
   function totalRows(): number {
-    return values.historyRows.value + values.liveRows.value;
+    return js.historyRows + js.liveRows;
   }
 
   /** Content rows the view shows (the `grid.padding-top` strip included). */
@@ -229,24 +308,37 @@ export function createGridEngine<P>(deps: GridEngineDeps<P>): GridEngine<P> {
     if (!(lh > 0)) {
       return { first: 0, last: -1 };
     }
-    const top = Math.max(0, values.scrollTop.value - values.paddingTop.value);
+    const top = Math.max(0, js.scrollTop - values.paddingTop.value);
     const first = Math.floor(top / lh);
-    const last = Math.min(totalRows() - 1, Math.floor((values.scrollTop.value + values.viewHeight.value) / lh));
+    const last = Math.min(totalRows() - 1, Math.floor((js.scrollTop + js.viewHeight) / lh));
     return { first, last };
   }
 
   /** Rows of one view height: the margin composed and prefetched around the view. */
   function marginRows(): number {
     const lh = lineHeight();
-    return lh > 0 ? Math.max(1, Math.ceil(values.viewHeight.value / lh)) : 1;
+    return lh > 0 ? Math.max(1, Math.ceil(js.viewHeight / lh)) : 1;
   }
 
   // ------------------------------------------------------------ writing
 
+  /** Writes a view value: the JS mirror at once, the shared value (UI thread) for the canvas and the gestures. */
+  function put<K extends keyof ViewState>(key: K, next: ViewState[K]): void {
+    if (js[key] === next) {
+      // Nothing to say: writing it back would also undo a gesture's momentum the JS copy has not seen.
+      return;
+    }
+    js[key] = next;
+    (values[key] as Box<ViewState[K]>).value = next;
+    if (isUiKey(key)) {
+      unconfirmed[key] = next as number;
+    }
+  }
+
   function clampView(): void {
-    const scroll = clampScroll({ scrollX: values.scrollX.value, scrollTop: values.scrollTop.value }, content(), view());
-    values.scrollX.value = scroll.scrollX;
-    values.scrollTop.value = scroll.scrollTop;
+    const scroll = clampScroll({ scrollX: js.scrollX, scrollTop: js.scrollTop }, content(), view());
+    put("scrollX", scroll.scrollX);
+    put("scrollTop", scroll.scrollTop);
   }
 
   function cursorCol(): number {
@@ -254,34 +346,26 @@ export function createGridEngine<P>(deps: GridEngineDeps<P>): GridEngine<P> {
   }
 
   function follow(): void {
-    if (!values.following.value) {
+    if (!js.following) {
       return;
     }
-    values.scrollX.value = followCursorScrollX(
-      cursorCol(),
-      values.scrollX.value,
-      values.cols.value,
-      values.fontSize.value,
-      values.viewWidth.value,
-    );
+    put("scrollX", followCursorScrollX(cursorCol(), js.scrollX, js.cols, js.fontSize, js.viewWidth));
   }
 
   /** Sets the zoom keeping the view at the bottom, or the text at the top of the view, in place. */
   function applyFont(next: number, scrollX: number | null): void {
-    const previous = values.fontSize.value;
-    const wasAtBottom = isAtBottom(values.scrollTop.value, content().height, values.viewHeight.value);
-    values.fontSize.value = next;
+    const previous = js.fontSize;
+    const wasAtBottom = isAtBottom(js.scrollTop, content().height, js.viewHeight);
+    put("fontSize", next);
     const ratio = previous > 0 ? next / previous : 1;
-    values.scrollX.value = scrollX ?? values.scrollX.value * ratio;
-    values.scrollTop.value = wasAtBottom
-      ? bottomScrollTop(content().height, values.viewHeight.value)
-      : values.scrollTop.value * ratio;
+    put("scrollX", scrollX ?? js.scrollX * ratio);
+    put("scrollTop", wasAtBottom ? bottomScrollTop(content().height, js.viewHeight) : js.scrollTop * ratio);
   }
 
   /** Chooses the zoom for the grid width and the view width (RF-3.7, RF-3.9, RF-3.10). */
   function ensureZoom(): void {
-    const cols = values.cols.value;
-    const width = values.viewWidth.value;
+    const cols = js.cols;
+    const width = js.viewWidth;
     if (!(cols > 0) || !(width > 0)) {
       return;
     }
@@ -290,16 +374,16 @@ export function createGridEngine<P>(deps: GridEngineDeps<P>): GridEngine<P> {
       const remembered = key === null ? undefined : deps.zoomMemory.get(key);
       const font =
         remembered === undefined ? initialZoom(cols, width).fontSize : clampFontSize(remembered, cols, width);
-      values.fontSize.value = font;
-      values.scrollX.value = 0;
-      values.scrollTop.value = bottomScrollTop(content().height, values.viewHeight.value);
+      put("fontSize", font);
+      put("scrollX", 0);
+      put("scrollTop", bottomScrollTop(content().height, js.viewHeight));
     } else if (layout.cols !== cols || layout.width !== width) {
       const next = rescaleOnResize(
         {
           cols: layout.cols,
           viewportWidth: layout.width,
-          fontSize: values.fontSize.value,
-          scrollX: values.scrollX.value,
+          fontSize: js.fontSize,
+          scrollX: js.scrollX,
         },
         { cols, viewportWidth: width, cursorCol: cursorCol() },
       );
@@ -310,14 +394,14 @@ export function createGridEngine<P>(deps: GridEngineDeps<P>): GridEngine<P> {
 
   function rememberZoom(): void {
     const key = deps.zoomKey();
-    if (key !== null && values.fontSize.value > 0) {
-      deps.zoomMemory.set(key, values.fontSize.value);
+    if (key !== null && js.fontSize > 0) {
+      deps.zoomMemory.set(key, js.fontSize);
     }
   }
 
   /** The view is laid out and has a zoom: there are rows to show. */
   function laidOut(): boolean {
-    return lineHeight() > 0 && values.viewHeight.value > 0;
+    return lineHeight() > 0 && js.viewHeight > 0;
   }
 
   function compose(): void {
@@ -383,17 +467,17 @@ export function createGridEngine<P>(deps: GridEngineDeps<P>): GridEngine<P> {
   function computeState(): TerminalGridState {
     const c = content();
     const v = view();
-    const cols = values.cols.value;
-    const font = values.fontSize.value;
+    const cols = js.cols;
+    const font = js.fontSize;
     const loading =
       renderer !== null &&
       state().history.loadingPages > 0 &&
       renderer.missingHistory(source(), visibleRows()) > 0;
     return {
-      atBottom: isAtBottom(values.scrollTop.value, c.height, v.height),
+      atBottom: isAtBottom(js.scrollTop, c.height, v.height),
       isFit: !(font > 0) || isFitWidth(font, cols, v.width),
       wide: canScroll(c, v).x,
-      followingCursor: values.following.value,
+      followingCursor: js.following,
       zoomPercent: font > 0 ? zoomPercent(font, cols, v.width) : 100,
       zoomChipVisible: chipVisible,
       loadingHistory: loading,
@@ -412,29 +496,33 @@ export function createGridEngine<P>(deps: GridEngineDeps<P>): GridEngine<P> {
 
   /** The grid, the history or their shape changed: bring the view along. */
   function sync(): void {
+    refreshUi();
     const previous = shape;
     const next = currentShape();
     const grid = session.grid();
     const lhBefore = lineHeight();
-    const heightBefore = (values.liveRows.value + values.historyRows.value) * lhBefore;
-    const wasAtBottom = previous === null || isAtBottom(values.scrollTop.value, heightBefore, values.viewHeight.value);
+    const heightBefore = (js.liveRows + js.historyRows) * lhBefore;
+    const wasAtBottom = previous === null || isAtBottom(js.scrollTop, heightBefore, js.viewHeight);
 
     shape = next;
-    values.cols.value = grid?.cols ?? state().cols;
-    values.liveRows.value = next.liveRows;
-    values.historyRows.value = next.historyRows;
+    put("cols", grid?.cols ?? state().cols);
+    put("liveRows", next.liveRows);
+    put("historyRows", next.historyRows);
     ensureZoom();
 
     const comparable = previous !== null && previous.alt === next.alt && previous.generation === next.generation;
-    values.scrollTop.value = scrollTopAfterHistoryChange({
-      scrollTop: values.scrollTop.value,
-      wasAtBottom,
-      previousTopIndex: comparable ? previous.dropped : next.dropped,
-      nextTopIndex: next.dropped,
-      lineHeight: lineHeight(),
-      contentHeight: content().height,
-      viewportHeight: values.viewHeight.value,
-    });
+    put(
+      "scrollTop",
+      scrollTopAfterHistoryChange({
+        scrollTop: js.scrollTop,
+        wasAtBottom,
+        previousTopIndex: comparable ? previous.dropped : next.dropped,
+        nextTopIndex: next.dropped,
+        lineHeight: lineHeight(),
+        contentHeight: content().height,
+        viewportHeight: js.viewHeight,
+      }),
+    );
     follow();
     clampView();
     compose();
@@ -483,13 +571,13 @@ export function createGridEngine<P>(deps: GridEngineDeps<P>): GridEngine<P> {
     },
 
     setViewport(width, height) {
-      const wasAtBottom =
-        shape === null || isAtBottom(values.scrollTop.value, content().height, values.viewHeight.value);
-      values.viewWidth.value = width;
-      values.viewHeight.value = height;
+      refreshUi();
+      const wasAtBottom = shape === null || isAtBottom(js.scrollTop, content().height, js.viewHeight);
+      put("viewWidth", width);
+      put("viewHeight", height);
       ensureZoom();
       if (wasAtBottom) {
-        values.scrollTop.value = bottomScrollTop(content().height, height);
+        put("scrollTop", bottomScrollTop(content().height, height));
       }
       follow();
       clampView();
@@ -498,16 +586,21 @@ export function createGridEngine<P>(deps: GridEngineDeps<P>): GridEngine<P> {
       publish();
     },
 
-    viewChanged() {
+    viewChanged(ui) {
       if (disposed) {
         return;
       }
+      adopt(ui);
       composeIfNeeded();
       requestHistory();
       publish();
     },
 
-    zoomed() {
+    zoomed(_percent, ui) {
+      if (disposed) {
+        return;
+      }
+      adopt(ui);
       if (chipTimer !== null) {
         clearTimer(chipTimer);
         chipTimer = null;
@@ -516,10 +609,11 @@ export function createGridEngine<P>(deps: GridEngineDeps<P>): GridEngine<P> {
       publish();
     },
 
-    settled(gesture) {
+    settled(gesture, ui) {
       if (disposed) {
         return;
       }
+      adopt(ui);
       if (gesture === "pinch") {
         rememberZoom();
         follow();
@@ -541,27 +635,30 @@ export function createGridEngine<P>(deps: GridEngineDeps<P>): GridEngine<P> {
     },
 
     followStopped() {
-      values.following.value = false;
+      put("following", false);
       publish();
     },
 
     scrollToBottom() {
-      values.scrollTop.value = bottomScrollTop(content().height, values.viewHeight.value);
+      refreshUi();
+      put("scrollTop", bottomScrollTop(content().height, js.viewHeight));
       composeIfNeeded();
       requestHistory();
       publish();
     },
 
     setFollowCursor(on) {
-      values.following.value = on;
+      refreshUi();
+      put("following", on);
       follow();
       clampView();
       publish();
     },
 
     fitWidth() {
-      const cols = values.cols.value;
-      const width = values.viewWidth.value;
+      refreshUi();
+      const cols = js.cols;
+      const width = js.viewWidth;
       const fit = clampFontSize(fitWidthFontSize(cols, width), cols, width);
       if (!(fit > 0)) {
         return;

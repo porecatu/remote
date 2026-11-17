@@ -9,7 +9,7 @@ import { GridModel } from "@/grid/gridModel";
 import { Scrollback } from "@/grid/scrollback";
 import { CursorShape, type Cursor, type Line, type ScrollbackRequest, type Style } from "@/protocol";
 
-import type { GridSession } from "./gridEngine";
+import type { Box, GridSession } from "./gridEngine";
 
 const PANE = 1;
 const PLAIN: Style = [null, null, 0];
@@ -190,3 +190,36 @@ export const TEST_GRID_THEME = {
   selectionBg: 0x264f78,
   palette: Array.from({ length: 16 }, (_, index) => 0x101010 * index),
 } as const;
+
+/**
+ * A box that behaves like a Reanimated 4 shared value read from the JS thread:
+ * a write is queued for the UI thread and reads return the last value the UI
+ * thread applied, until `flush()` (the UI thread catching up).
+ */
+export interface DeferredBox<T> extends Box<T> {
+  /** The UI thread applies every queued write. */
+  flush(): void;
+  /** The UI thread writes a value (a gesture): applied at once, and what the next read returns. */
+  writeOnUi(next: T): void;
+}
+
+export function deferredBox<T>(initial: T): DeferredBox<T> {
+  let applied = initial;
+  const queue: T[] = [];
+  return {
+    get value() {
+      return applied;
+    },
+    set value(next: T) {
+      queue.push(next);
+    },
+    flush() {
+      while (queue.length > 0) {
+        applied = queue.shift() as T;
+      }
+    },
+    writeOnUi(next: T) {
+      applied = next;
+    },
+  };
+}
