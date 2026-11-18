@@ -105,7 +105,7 @@ export function createFakeGridSession(options: FakeGridOptions = {}): FakeGridSe
     cols,
     rows,
     history: historyView(),
-    modifiers: { ctrl: "off", alt: "off" },
+    modifiers: { ctrl: "off", alt: "off", shift: "off" },
     paste: null,
     tabGone: null,
     canType: true,

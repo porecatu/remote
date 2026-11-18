@@ -9,7 +9,7 @@ import { palettes } from "@ui/theme";
 
 import { KeyBar } from "./KeyBar";
 
-const OFF: TerminalModifiers = { ctrl: "off", alt: "off" };
+const OFF: TerminalModifiers = { ctrl: "off", alt: "off", shift: "off" };
 
 beforeEach(() => {
   jest.mocked(useColorScheme).mockReturnValue("dark");
@@ -59,6 +59,7 @@ describe("KeyBar", () => {
     for (const name of [
       "Escape",
       "Tab",
+      "Shift, released",
       "Control, released",
       "Alt, released",
       "Left arrow",
@@ -83,12 +84,13 @@ describe("KeyBar", () => {
     const rig = await setup();
     expect(screen.queryByTestId("keybar-ctrl-lock")).toBeNull();
 
-    await rig.rerender({ ctrl: "once", alt: "locked" });
+    await rig.rerender({ ctrl: "once", alt: "locked", shift: "once" });
     expect(button("Control, armed")).toBeOnTheScreen();
     expect(button("Alt, locked")).toBeOnTheScreen();
+    expect(button("Shift, armed")).toBeOnTheScreen();
 
     const dark = palettes.dark;
-    for (const id of ["ctrl", "alt"]) {
+    for (const id of ["ctrl", "alt", "shift"]) {
       expect(StyleSheet.flatten(screen.getByTestId(`keybar-${id}`).props.style)).toMatchObject({
         backgroundColor: dark.bgSelected,
         borderColor: dark.accent,
@@ -111,24 +113,26 @@ describe("KeyBar", () => {
 
   it("speaks the states in pt_BR", async () => {
     const services = createTestServices({ systemLocales: [{ languageCode: "pt", languageTag: "pt-BR" }] });
-    await setup({ services, modifiers: { ctrl: "locked", alt: "off" } });
+    await setup({ services, modifiers: { ctrl: "locked", alt: "off", shift: "off" } });
     expect(screen.getByLabelText("Teclas especiais")).toBeOnTheScreen();
     expect(button("Controle, travado")).toBeOnTheScreen();
     expect(button("Alt, solto")).toBeOnTheScreen();
+    expect(button("Shift, solto")).toBeOnTheScreen();
     expect(button("Seta para cima")).toBeOnTheScreen();
     expect(button("Colar")).toBeOnTheScreen();
   });
 
   it("taps a modifier through onModifier, never as a key", async () => {
     const rig = await setup();
+    await fireEvent.press(button("Shift, released"));
     await fireEvent.press(button("Control, released"));
     await fireEvent.press(button("Alt, released"));
-    expect(rig.onModifier.mock.calls).toEqual([["ctrl"], ["alt"]]);
+    expect(rig.onModifier.mock.calls).toEqual([["shift"], ["ctrl"], ["alt"]]);
     expect(rig.onKey).not.toHaveBeenCalled();
   });
 
   it("hands Esc to the controller like any key and leaves the armed modifier alone", async () => {
-    const rig = await setup({ modifiers: { ctrl: "once", alt: "off" } });
+    const rig = await setup({ modifiers: { ctrl: "once", alt: "off", shift: "off" } });
     await fireEvent.press(button("Escape"));
     expect(rig.onKey.mock.calls).toEqual([["esc"]]);
     expect(rig.onModifier).not.toHaveBeenCalled();
@@ -144,7 +148,7 @@ describe("KeyBar", () => {
   });
 
   it("Fn swaps the scrolling keys for F1–F12 and sends nothing; 'Close F keys' goes back", async () => {
-    const rig = await setup({ modifiers: { ctrl: "once", alt: "off" } });
+    const rig = await setup({ modifiers: { ctrl: "once", alt: "off", shift: "off" } });
     await fireEvent.press(button("Function keys"));
     expect(rig.onKey).not.toHaveBeenCalled();
     expect(rig.onModifier).not.toHaveBeenCalled();

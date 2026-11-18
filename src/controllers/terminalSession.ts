@@ -113,10 +113,11 @@ export interface HistoryView {
   readonly reachedOldest: boolean;
 }
 
-/** The two modifiers of the bar (RF-3.16). */
+/** The modifiers of the bar (RF-3.16). */
 export interface TerminalModifiers {
   readonly ctrl: ModifierState;
   readonly alt: ModifierState;
+  readonly shift: ModifierState;
 }
 
 export interface TerminalState {
@@ -208,12 +209,12 @@ export interface TerminalSession {
   requestHistory(viewportTopOffset: number, count: number): boolean;
   /** Text of the system keyboard (RF-3.14); one character with a modifier armed goes as `key` (RF-3.16). */
   typeText(text: string): boolean;
-  /** A button of the key bar (RF-3.15): a key goes with the armed modifiers; `ctrl`/`alt` tap the modifier; `fn` does nothing. */
+  /** A button of the key bar (RF-3.15): a key goes with the armed modifiers; `ctrl`/`alt`/`shift` tap the modifier; `fn` does nothing. */
   pressKey(id: KeyBarId): boolean;
   /** Any named key (e.g. `backspace`, `enter` from the system keyboard), with the armed modifiers. */
   pressNamedKey(key: NamedKey): boolean;
   /** Off -> once -> locked -> off (RF-3.16). */
-  tapModifier(modifier: "ctrl" | "alt"): void;
+  tapModifier(modifier: "ctrl" | "alt" | "shift"): void;
   /** Paste (RF-3.17): with a line break, nothing goes before `pasteConfirm()`. */
   pasteRequest(text: string): PasteRequestResult;
   /** Sends the paste waiting for confirmation. False when there is none or it was refused. */
@@ -288,7 +289,7 @@ function defaultPane(tab: Tab): PaneId | null {
 }
 
 function modifiersOf(snapshot: ModifiersSnapshot): TerminalModifiers {
-  return { ctrl: snapshot.ctrl, alt: snapshot.alt };
+  return { ctrl: snapshot.ctrl, alt: snapshot.alt, shift: snapshot.shift };
 }
 
 // ----------------------------------------------------------------- controller

@@ -36,7 +36,7 @@ export type KeyBarKeyId =
   | (typeof FUNCTION_KEYS)[number];
 
 /** Buttons that arm a modifier instead of sending a key (RF-3.16). */
-export type KeyBarModifierId = "ctrl" | "alt";
+export type KeyBarModifierId = "ctrl" | "alt" | "shift";
 
 /** The "F1-F12" access: opens the function keys, sends nothing itself. */
 export type KeyBarId = KeyBarKeyId | KeyBarModifierId | "fn";
@@ -70,6 +70,7 @@ export const KEY_BAR_KEYS: Readonly<Record<KeyBarKeyId, NamedKey>> = {
 export const KEY_BAR_LAYOUT: readonly KeyBarId[] = [
   "esc",
   "tab",
+  "shift",
   "ctrl",
   "alt",
   "up",
@@ -88,7 +89,7 @@ export function isKeyBarKey(id: KeyBarId): id is KeyBarKeyId {
 }
 
 export function isKeyBarModifier(id: KeyBarId): id is KeyBarModifierId {
-  return id === "ctrl" || id === "alt";
+  return id === "ctrl" || id === "alt" || id === "shift";
 }
 
 /** The named key a bar button sends, or `null` for modifiers and "fn". */

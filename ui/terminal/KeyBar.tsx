@@ -3,7 +3,7 @@
 // RF-3.16, RF-3.17, RF-3.19): one row, 52 high, `bg.bar` with a `border.row`
 // on top, keys of 44 with a margin of 4 and a gap of 6.
 //
-// - `Esc`, `Tab`, `Ctrl`, `Alt` stay on the left, always visible.
+// - `Esc`, `Tab`, `Shift`, `Ctrl`, `Alt` stay on the left, always visible.
 // - The rest scrolls: the arrows (they repeat while held), then `Home`, `End`,
 //   `PgUp`, `PgDn`, `Fn` and `Paste`, with a fade on the right edge while
 //   there is more to the right. The arrows scroll too: eight keys of 44 plus
@@ -12,7 +12,7 @@
 //   goes back.
 //
 // The bar sends nothing itself: keys go to `onKey` (the terminal controller
-// adds the armed modifiers), `Ctrl`/`Alt` to `onModifier`, and `Paste` to
+// adds the armed modifiers), `Shift`/`Ctrl`/`Alt` to `onModifier`, and `Paste` to
 // `onPaste`. `Fn` and "close F" only change the bar. Every touch on a key
 // gives a light haptic tick when the vibration setting is on (the same setting
 // as the bell). The screen shows the bar only while the system keyboard is
@@ -42,11 +42,11 @@ import { KeyBarKey } from "./KeyBarKey";
 import { useKeyRepeat } from "./useKeyRepeat";
 
 export type KeyBarProps = {
-  /** State of `Ctrl` and `Alt` (the terminal controller's `modifiers`). */
+  /** State of `Shift`, `Ctrl` and `Alt` (the terminal controller's `modifiers`). */
   readonly modifiers: TerminalModifiers;
   /** A key that sends a named key (`Esc`, `Tab`, arrows, navigation, `F1`–`F12`); arrows repeat. */
   readonly onKey: (id: KeyBarKeyId) => void;
-  /** A tap on `Ctrl` or `Alt`. */
+  /** A tap on `Shift`, `Ctrl` or `Alt`. */
   readonly onModifier: (modifier: KeyBarModifierId) => void;
   /** The `Paste` key (`clipboard-paste`). */
   readonly onPaste: () => void;
@@ -71,6 +71,12 @@ const NAVIGATION: readonly { readonly id: NavigationId; readonly label: MessageK
   { id: "pgup", label: "keybar.label.pgup", a11y: "keybar.a11y.pgup" },
   { id: "pgdn", label: "keybar.label.pgdn", a11y: "keybar.a11y.pgdn" },
 ];
+
+const MODIFIER_A11Y: Readonly<Record<KeyBarModifierId, MessageKey>> = {
+  shift: "keybar.a11y.shift",
+  ctrl: "keybar.a11y.ctrl",
+  alt: "keybar.a11y.alt",
+};
 
 const STATE_KEYS: Readonly<Record<ModifierState, MessageKey>> = {
   off: "keybar.state.off",
@@ -206,9 +212,7 @@ export function KeyBar({ modifiers, onKey, onModifier, onPaste, testID = "keybar
   };
 
   const modifierLabel = (modifier: KeyBarModifierId): string =>
-    t(modifier === "ctrl" ? "keybar.a11y.ctrl" : "keybar.a11y.alt", {
-      state: t(STATE_KEYS[modifiers[modifier]]),
-    });
+    t(MODIFIER_A11Y[modifier], { state: t(STATE_KEYS[modifiers[modifier]]) });
 
   // Read where a scroll settles: the fade only has to be right at rest.
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -257,6 +261,13 @@ export function KeyBar({ modifiers, onKey, onModifier, onPaste, testID = "keybar
         accessibilityLabel={t("keybar.a11y.tab")}
         onPress={press("tab")}
         testID={`${testID}-tab`}
+      />
+      <KeyBarKey
+        label={t("keybar.label.shift")}
+        accessibilityLabel={modifierLabel("shift")}
+        modifierState={modifiers.shift}
+        onPress={pressModifier("shift")}
+        testID={`${testID}-shift`}
       />
       <KeyBarKey
         label={t("keybar.label.ctrl")}

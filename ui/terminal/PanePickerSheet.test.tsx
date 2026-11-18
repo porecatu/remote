@@ -46,7 +46,7 @@ function terminalState(layout: PaneNode | null, over: Partial<TerminalState> = {
     cols: 80,
     rows: 24,
     history: { lines: 0, dropped: 0, total: 0, generation: 0, alt: false, loadingPages: 0, reachedOldest: true },
-    modifiers: { ctrl: "off", alt: "off" },
+    modifiers: { ctrl: "off", alt: "off", shift: "off" },
     paste: null,
     tabGone: null,
     canType: true,

@@ -740,7 +740,7 @@ Todas voltam à lista ao fechar, com o desktop já marcado.
 |                      (fim)  |   botoes flutuantes (44)
 |                     (cursor)|
 +-----------------------------+
-| Esc Tab Ctrl Alt | v ^ > ...|   barra de teclas (52)
+| Esc Tab Shift Ctrl Alt | v ^ > |   barra de teclas (52)
 +-----------------------------+
 |     teclado do sistema      |
 +-----------------------------+
@@ -792,18 +792,18 @@ Todas voltam à lista ao fechar, com o desktop já marcado.
 
 ### 4.8 Terminal: barra de teclas especiais
 
-**Objetivo.** O que o teclado virtual não tem: `Esc`, `Tab`, `Ctrl`, `Alt`, setas, navegação, `F1`–`F12`. RF-3.15, RF-3.16, RF-3.19.
+**Objetivo.** O que o teclado virtual não tem: `Esc`, `Tab`, `Shift`, `Ctrl`, `Alt`, setas, navegação, `F1`–`F12`. RF-3.15, RF-3.16, RF-3.19.
 
 **Onde.** Fixa **acima do teclado do sistema** (acompanha o teclado), só enquanto o teclado está aberto. Altura 52, `bg.bar`, borda superior `border.row`. Teclas de 44 × 44 (`target.min`: aqui 44 e não 48, por falta de altura; é o piso de iOS), margem 4, vão de 6, raio 6, rótulo mono 13/500 `text.body`, fundo `bg.key`, pressionada `bg.key.pressed`.
 
 ```
 +-----------------------------------------------+
-| Esc  Tab  Ctrl  Alt | < v ^ > | Home End PgUp...|  rolavel
+| Esc  Tab  Shift  Ctrl  Alt | < v ^ > | Home End PgUp...|  rolavel
 +-----------------------------------------------+
 ```
 
 **Arranjo (proposta).** Uma linha só, em três grupos:
-1. **Fixos à esquerda:** `Esc`, `Tab`, `Ctrl`, `Alt` (os mais usados, sempre visíveis).
+1. **Fixos à esquerda:** `Esc`, `Tab`, `Shift`, `Ctrl`, `Alt` (os mais usados, sempre visíveis; `Shift` entre `Tab` e `Ctrl`, por pedido do dono em 2026-11-18). Em tela estreita sobra menos largura para as setas, que rolam.
 2. **Setas:** `←` `↓` `↑` `→` (ícones `arrow-left`, `arrow-down`, `arrow-up`, `arrow-right`), com **repetição** ao manter pressionada (primeira repetição em 400 ms, depois a cada 80 ms).
 3. **Rolável à direita:** `Home`, `End`, `PgUp`, `PgDn`, `Fn` e `Colar` (ícone `clipboard-paste`). Um degradê na borda direita indica que há mais.
 
@@ -811,7 +811,7 @@ A alternativa (duas linhas, tudo à vista) custa 52 de altura a mais num aparelh
 
 **`Fn`.** Troca a linha rolável por `F1`…`F12`, com uma tecla `x` ("Fechar F") de volta à normal.
 
-**Modificadores com trava (RF-3.16).** `Ctrl` e `Alt` têm três estados, **sempre distinguíveis sem a cor**:
+**Modificadores com trava (RF-3.16).** `Shift`, `Ctrl` e `Alt` têm três estados, **sempre distinguíveis sem a cor**:
 
 | Estado | Visual |
 |---|---|
@@ -819,7 +819,7 @@ A alternativa (duas linhas, tudo à vista) custa 52 de altura a mais num aparelh
 | Armado (um toque; vale para a próxima tecla e solta) | fundo `bg.selected`, borda 2 `accent`, e a barra inferior do rótulo sublinhada |
 | Travado (dois toques; até o terceiro) | o mesmo mais o ícone `lock` (10) no canto da tecla |
 
-O modificador **vale para**: o próximo texto do teclado do sistema (`Ctrl` + "c" vai como `key { "c", Ctrl }`, nunca como `text`), e para as teclas da barra (setas, `Home`, `Tab`…), enviadas como `key` com os `mods`. `Esc` e `Fn` não consomem o armado. O estado vale **por tela do terminal** e zera ao sair dela.
+O modificador **vale para**: o próximo texto do teclado do sistema (`Ctrl` + "c" vai como `key { "c", Ctrl }`, nunca como `text`), e para as teclas da barra (setas, `Home`, `Tab`…), enviadas como `key` com os `mods`. `Shift` + letra do teclado do sistema vai como `key` com a letra já em maiúscula e o bit `Shift` (o desktop não muda a caixa por `Shift`); `Shift` + `Tab` e `Shift` + seta vão como `key` com o bit. `Esc` e `Fn` não consomem o armado. O estado vale **por tela do terminal** e zera ao sair dela.
 
 **Vibração.** Cada toque em tecla da barra dá um tique leve (*haptic*) se o aparelho suporta e a vibração das configurações está ligada. (Proposta: a mesma chave da campainha.)
 

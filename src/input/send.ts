@@ -13,7 +13,7 @@
 
 import { type ClientMessage, type NamedKey, type PaneId, PaneState } from "../protocol";
 import { type PasteAnalysis, type PasteOptions, analyzePaste } from "./paste";
-import type { ModifierKeys } from "./modifiers";
+import { MODIFIER_BITS, type ModifierKeys } from "./modifiers";
 
 /**
  * Largest text of one `text-input` or `paste`, in UTF-8 bytes. An app-side
@@ -127,7 +127,11 @@ export function createInputSender(options: InputSenderOptions): InputSender {
         return { ok: false, reason: refusal };
       }
       if (modifiers.peek() !== 0 && isSingleScalar(text)) {
-        send({ type: "key", pane, key: text, mods: modifiers.consume() });
+        const mods = modifiers.consume();
+        // The host does not change a character's case for `Shift`, so the
+        // character goes already shifted (`ß` stays: its upper case is two).
+        const upper = (mods & MODIFIER_BITS.shift) !== 0 ? text.toUpperCase() : text;
+        send({ type: "key", pane, key: isSingleScalar(upper) ? upper : text, mods });
       } else {
         send({ type: "text-input", pane, text });
       }

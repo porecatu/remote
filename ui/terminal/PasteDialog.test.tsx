@@ -129,7 +129,7 @@ function terminalState(over: Partial<TerminalState> = {}): TerminalState {
     cols: 80,
     rows: 24,
     history: HISTORY,
-    modifiers: { ctrl: "off", alt: "off" },
+    modifiers: { ctrl: "off", alt: "off", shift: "off" },
     paste: null,
     tabGone: null,
     canType: true,

@@ -81,6 +81,45 @@ describe("typeText", () => {
     ]);
   });
 
+  it("sends a letter with Shift armed already in upper case, with the Shift bit", () => {
+    const { sender, sent, modifiers } = makeSender();
+    modifiers.tap("shift");
+    sender.typeText(PANE, "a");
+    sender.typeText(PANE, "a");
+    expect(sent).toEqual([
+      { type: "key", pane: PANE, key: "A", mods: 0x04 },
+      { type: "text-input", pane: PANE, text: "a" },
+    ]);
+  });
+
+  it("keeps a character whose upper case is not one scalar, and a non-letter, as typed", () => {
+    const { sender, sent, modifiers } = makeSender();
+    modifiers.tap("shift");
+    modifiers.tap("shift");
+    sender.typeText(PANE, "ß");
+    sender.typeText(PANE, "1");
+    expect(sent).toEqual([
+      { type: "key", pane: PANE, key: "ß", mods: 0x04 },
+      { type: "key", pane: PANE, key: "1", mods: 0x04 },
+    ]);
+  });
+
+  it("Shift with Ctrl sends both bits and the upper-case letter", () => {
+    const { sender, sent, modifiers } = makeSender();
+    modifiers.tap("shift");
+    modifiers.tap("ctrl");
+    sender.typeText(PANE, "c");
+    expect(sent).toEqual([{ type: "key", pane: PANE, key: "C", mods: 0x05 }]);
+  });
+
+  it("a named key goes with the Shift bit (Shift+Tab, Shift+arrows)", () => {
+    const { sender, sent, modifiers } = makeSender();
+    modifiers.tap("shift");
+    sender.pressNamed(PANE, NamedKey.tab);
+    expect(sent).toEqual([{ type: "key", pane: PANE, key: NamedKey.tab, mods: 0x04 }]);
+    expect(modifiers.state("shift")).toBe("off");
+  });
+
   it("a locked modifier keeps applying to single characters", () => {
     const { sender, sent, modifiers } = makeSender();
     modifiers.tap("alt");

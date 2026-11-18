@@ -17,6 +17,7 @@ Proposto até a medição do render em aparelho. Dívida de verificação no
 
 ### Adicionado
 
+- **Tecla `Shift` na barra de teclas** (entre `Tab` e `Ctrl`), modificador com trava como `Ctrl` e `Alt` (RF-3.16): `Shift` + `Tab`, `Shift` + setas e `Shift` + letra do teclado do sistema. A letra vai em maiúscula, com o bit `Shift`, porque o desktop não muda a caixa por `Shift`.
 
 - **Projeto Expo** SDK 58 (React Native 0.88.1, React 19.3.0, Hermes,
   `expo-router`, *development build*) em TypeScript 6.0.3 estrito, com Node

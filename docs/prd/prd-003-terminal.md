@@ -53,8 +53,8 @@ A tela do terminal é onde o app entrega valor: ler a saída de um build, ver o 
 ### Input
 
 - **RF-3.14** Tocar na grade abre o teclado do sistema. O texto digitado (inclusive acentos, composição de IME e ditado) vai como `text-input` (nome da mensagem na spec).
-- **RF-3.15** Acima do teclado, uma **barra de teclas especiais**: `Esc`, `Tab`, `Ctrl`, `Alt`, setas, `Home`/`End`, `PgUp`/`PgDn` e um acesso a `F1`–`F12`. As teclas nomeadas vão como `key` com o `named-key` da spec.
-- **RF-3.16** `Ctrl` e `Alt` são **modificadores com trava**: um toque vale para a próxima tecla, dois toques travam até um terceiro. `Ctrl` + uma letra do teclado do sistema vai como `key { key: "c", mods: Ctrl }`, não como texto.
+- **RF-3.15** Acima do teclado, uma **barra de teclas especiais**: `Esc`, `Tab`, `Shift`, `Ctrl`, `Alt`, setas, `Home`/`End`, `PgUp`/`PgDn` e um acesso a `F1`–`F12`. As teclas nomeadas vão como `key` com o `named-key` da spec.
+- **RF-3.16** `Shift`, `Ctrl` e `Alt` são **modificadores com trava**: um toque vale para a próxima tecla, dois toques travam até um terceiro. `Ctrl` + uma letra do teclado do sistema vai como `key { key: "c", mods: Ctrl }`, não como texto; `Shift` + uma letra vai como `key` com a letra em maiúscula e `mods: Shift`.
 - **RF-3.17** **Colar** (menu do sistema ou botão na barra) vai como `paste`; o desktop aplica bracketed paste e as regras do colar local. Colar mais de uma linha pede confirmação no app, mostrando as primeiras linhas.
 
   > **Decidido pelo dono em 2026-11-16:** a confirmação aparece **sempre que o texto colado tiver qualquer quebra de linha** (`\n`, `\r` ou `\r\n`), inclusive uma só no fim (`ls\n` rodaria o comando ao colar). A prévia mostra até **5 linhas**, cada uma cortada em **120 caracteres** (contados por code point), e diz quantas linhas ficaram de fora. Implementado em `src/input/paste.ts` (`DEFAULT_PREVIEW_LINES`, `DEFAULT_PREVIEW_LINE_CHARS`, `analyzePaste`) e `src/input/send.ts`; nada é mandado antes da confirmação.

@@ -49,6 +49,8 @@ describe("key bar", () => {
     expect(namedKeyOf("fn")).toBeNull();
     expect(isKeyBarModifier("ctrl")).toBe(true);
     expect(isKeyBarModifier("alt")).toBe(true);
+    expect(isKeyBarModifier("shift")).toBe(true);
+    expect(namedKeyOf("shift")).toBeNull();
     expect(isKeyBarModifier("esc")).toBe(false);
     expect(isKeyBarKey("fn")).toBe(false);
     expect(isKeyBarKey("ctrl")).toBe(false);
@@ -57,7 +59,7 @@ describe("key bar", () => {
 
   it("lays out the buttons of RF-3.15 once each", () => {
     expect(new Set(KEY_BAR_LAYOUT).size).toBe(KEY_BAR_LAYOUT.length);
-    for (const id of ["esc", "tab", "ctrl", "alt", "up", "down", "left", "right", "home", "end", "pgup", "pgdn", "fn"] as const) {
+    for (const id of ["esc", "tab", "shift", "ctrl", "alt", "up", "down", "left", "right", "home", "end", "pgup", "pgdn", "fn"] as const) {
       expect(KEY_BAR_LAYOUT).toContain(id);
     }
   });

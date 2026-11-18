@@ -329,6 +329,15 @@ describe("terminal session: input", () => {
     expect(r.terminal.getState().modifiers.ctrl).toBe("off");
   });
 
+  it("arms Shift from the bar: Shift+Tab goes with the bit and the armed Shift drops", () => {
+    const r = rig();
+    expect(r.terminal.pressKey("shift")).toBe(true);
+    expect(r.terminal.getState().modifiers.shift).toBe("once");
+    expect(r.terminal.pressKey("tab")).toBe(true);
+    expect(received(r, "key")).toEqual([{ type: "key", pane: 100, key: NamedKey.tab, mods: 0x04 }]);
+    expect(r.terminal.getState().modifiers.shift).toBe("off");
+  });
+
   it("sends the key bar buttons with the locked modifiers; Ctrl and Alt only arm", () => {
     const r = rig();
     expect(r.terminal.pressKey("alt")).toBe(true);
