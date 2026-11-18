@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "windows": [
+    {
+      "geometry": { "x": 80, "y": 80, "width": 1100, "height": 700, "maximized": false },
+      "monitor": null,
+      "groups": [
+        { "id": 0, "name": null, "color": null, "collapsed": false, "tabs": [1] },
+        { "id": 1, "name": "Build", "color": "blue", "collapsed": false, "tabs": [2, 3] },
+        { "id": 2, "name": null, "color": null, "collapsed": false, "tabs": [4, 5] }
+      ],
+      "tabs": [
+        { "id": 1, "custom_title": "Principal", "cwd": null, "spawn_program": null, "panes": null },
+        { "id": 2, "custom_title": "Compilacao", "cwd": null, "spawn_program": null, "panes": null },
+        {
+          "id": 3,
+          "custom_title": "Dividida",
+          "cwd": null,
+          "spawn_program": null,
+          "panes": {
+            "root": {
+              "Split": {
+                "axis": "Horizontal",
+                "ratio": 0.5,
+                "first": { "Leaf": { "id": 0, "cwd": null, "spawn_program": null } },
+                "second": { "Leaf": { "id": 1, "cwd": null, "spawn_program": null } }
+              }
+            },
+            "focused": 0
+          }
+        },
+        { "id": 4, "custom_title": "Solta", "cwd": null, "spawn_program": null, "panes": null },
+        { "id": 5, "custom_title": "Outra solta", "cwd": null, "spawn_program": null, "panes": null }
+      ],
+      "active_tab": 1,
+      "theme": null,
+      "zoom_steps": 0
+    },
+    {
+      "geometry": { "x": 260, "y": 220, "width": 900, "height": 600, "maximized": false },
+      "monitor": null,
+      "groups": [{ "id": 0, "name": null, "color": null, "collapsed": false, "tabs": [1, 2] }],
+      "tabs": [
+        { "id": 1, "custom_title": "Segunda janela", "cwd": null, "spawn_program": null, "panes": null },
+        { "id": 2, "custom_title": "Destino", "cwd": null, "spawn_program": null, "panes": null }
+      ],
+      "active_tab": 1,
+      "theme": null,
+      "zoom_steps": 0
+    }
+  ]
+}

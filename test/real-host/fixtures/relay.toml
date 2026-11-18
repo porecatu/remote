@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Relay local da verificação contra o desktop real (test/real-host/README.md).
+[server]
+bind = "127.0.0.1:8790"
+behind_proxy = false
+trusted_proxies = []
+shutdown_grace_seconds = 2
+
+[[tokens]]
+name = "verificacao"
+# Relativo a este arquivo. O mesmo token que está no cofre do sistema
+# (serviço porecatu-remote), que o desktop usa; nunca versionado.
+value_file = "token"
+
+[log]
+level = "info"
+format = "text"
+ip_addresses = "truncated"
+
+[metrics]
+enabled = false

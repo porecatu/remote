@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Porecatu de teste da verificação contra o desktop real (test/real-host/README.md).
+# Isolado do Porecatu de uso: passe com --config e aponte PORECATU_SESSION para
+# uma cópia de session.seed.json.
+[session]
+# Abas restauradas que não são as ativas ficam "não iniciadas" (start-pane).
+lazy_restore = true
+
+[remote]
+enabled = true
+relay_url = "ws://127.0.0.1:8790"
+
+[keybindings]
+# Abre Configurações > Acesso remoto já com o QR, para copiar o link.
+"ctrl+shift+f12" = "remote.pair"

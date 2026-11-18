@@ -14,7 +14,8 @@
     "lint": "eslint .",
     "test": "jest",
     "check": "pnpm typecheck && pnpm lint && pnpm test",
-    "fake-host": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/fake-host/index.ts"
+    "fake-host": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/fake-host/index.ts",
+    "real-host": "jest --config jest.real-host.config.js"
   },
   "dependencies": {
     "@porecatu/protocol": "file:vendor/porecatu-protocol-0.1.0.tgz",

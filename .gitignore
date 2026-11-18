@@ -6,3 +6,6 @@ coverage/
 dist/
 *.tgz
 !vendor/*.tgz
+
+# Token do relay da verificação contra o desktop real (test/real-host/README.md)
+test/real-host/**/token
