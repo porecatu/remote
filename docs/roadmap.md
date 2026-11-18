@@ -19,7 +19,7 @@ Em 2026-11-16 entrou, por decisão do dono, **só a camada de lógica**. A [anat
 
 Em 2026-11-17 entraram **as telas dos PRDs 001 a 004**, com essas dependências instaladas e o Skia: raiz (bloqueio, cobertura de privacidade, *deep link*), lista de desktops, pareamento, Configurações e Este aparelho, workspace, terminal, folhas e menus de gestão de abas, diálogos e avisos (`app/` e `ui/`, ligados à lógica por `src/controllers/`; [arquitetura](arquitetura.md) §1). No mesmo dia o app passou à **especificação 0.4** do protocolo ([ADR-0010 do protocolo](https://github.com/porecatu/protocol/blob/main/docs/adr/0010-aba-ativa-pelo-cliente.md)): abrir uma aba no terminal do app a ativa no desktop (`activate-tab`).
 
-**Nenhum critério de saída de M1 a M4 está atendido**, porque todos pedem um aparelho ou um Porecatu real. O que está verificado é por **teste automatizado em Node**: `pnpm test` com **1593 testes em 129 suítes**, todos passando, com `jest-expo` e `@testing-library/react-native` (as bibliotecas nativas pelos mocks oficiais); `pnpm typecheck` e `pnpm lint` limpos. O protocolo foi verificado no repositório dele (vetores e teste cruzado Rust↔TypeScript). O que a anatomia não fixava e a implementação escolheu está na anatomia, em "Escolhas da implementação a confirmar", à espera do aval do dono.
+**Nenhum critério de saída de M1 a M4 está atendido**, porque todos pedem um aparelho ou um Porecatu real. O que está verificado é por **teste automatizado em Node**: `pnpm test` com **1632 testes em 128 suítes**, todos passando, com `jest-expo` e `@testing-library/react-native` (as bibliotecas nativas pelos mocks oficiais); `pnpm typecheck` e `pnpm lint` limpos. O protocolo foi verificado no repositório dele (vetores e teste cruzado Rust↔TypeScript). O que a anatomia não fixava e a implementação escolheu está na anatomia, em "Escolhas da implementação a confirmar", à espera do aval do dono.
 
 Dívida de verificação de toda a implementação inicial (vale para cada marco abaixo):
 
@@ -34,7 +34,7 @@ Dívida de verificação de toda a implementação inicial (vale para cada marco
 | Leitor de tela (TalkBack, VoiceOver) | Rótulos e anúncios testados em Node; não testados com leitor de verdade, nem o resumo da grade (`ui/terminal/grid/gridA11y.ts`), nem o aviso fora do alcance do VoiceOver com uma folha aberta |
 | Navegação e transições | `dismissTo` na pilha aninhada do pareamento (inclusive entrando por link), pilha restaurada no terminal, `replace("/pair")` e `dismissTo("/")` na pilha real, transições de 150 ms, `maintainVisibleContentPosition` e a rolagem devolvida ao cancelar a busca |
 | Câmera e periféricos | `CameraView` fora de foco, lanterna, teclado na tela de nome do pareamento, vibração da campainha, paisagem imersiva |
-| Contra um Porecatu real | O acesso remoto do desktop ainda não está disponível; o app só falou com o relay em memória do pacote e com o desktop falso, que responde `unsupported` a toda ação |
+| Contra um Porecatu real | O acesso remoto entrou no Porecatu **0.10.0** (2026-11-18, especificação 0.4, [guia](https://github.com/porecatu/terminal/blob/main/docs/guia-do-usuario.md#acesso-remoto)), mas **o app nunca falou com ele**: só com o relay em memória do pacote e com o desktop falso, que responde `unsupported` a toda ação. O desktop também registra que nada foi visto rodando com o app real nem com um relay real. Dá para exercitar as 14 ações em Node, com o Porecatu e o relay reais, antes de haver aparelho |
 
 Pendências que não são de verificação:
 
@@ -44,7 +44,7 @@ Pendências que não são de verificação:
 | Textos das permissões nativas (câmera, Face ID) em `app.config.ts` | **Provisórios**, em inglês e fora do catálogo (a anatomia não os fixa); decididos e traduzidos antes do M5 |
 | `@porecatu/protocol` vindo de `vendor/porecatu-protocol-0.1.0.tgz` | Regerado para a especificação 0.4 com o mesmo nome e versão; passa a dependência publicada (ou git) quando o pacote for publicado ([ADR-0004](adr/0004-criptografia-em-js-puro.md)) |
 | Escolhas da implementação a confirmar | Valores e comportamentos que a anatomia não fixava, listados nela; esperam o aval do dono |
-| Relay na especificação 0.4 | Dependência externa, no [porecatu/relay](https://github.com/porecatu/relay): quando a 0.4 entrar no `main` do protocolo, subir lá o `rev` do `porecatu-protocol`. O relay não lê ações, então nada muda no comportamento; o tarball do app foi gerado do mesmo conteúdo |
+| Relay e desktop na especificação 0.4 | **Resolvido (2026-11-17).** A 0.4 entrou no `main` do protocolo (`0909e7c`) e o [porecatu/relay](https://github.com/porecatu/relay) e o Porecatu 0.10.0 usam esse mesmo `rev` do `porecatu-protocol`. O relay não lê ações, então nada mudou no comportamento. Resta ao app o tarball em `vendor/`, gerado do mesmo conteúdo |
 
 ---
 
@@ -83,7 +83,7 @@ PRD-000 a 004, ADR-0001 a 0007, arquitetura, CLAUDE.md, verificação de links.
 
 ## M2 — Pareamento e navegação (só leitura)
 
-**Depende de:** acesso remoto do Porecatu desktop com pareamento e envio de `workspace` e grade.
+**Depende de:** acesso remoto do Porecatu desktop com pareamento e envio de `workspace` e grade. **Disponível desde o Porecatu 0.10.0 (2026-11-18)**, ainda não exercitado pelo app.
 
 - [PRD-001](prd/prd-001-desktops-e-pareamento.md) inteiro: identidade, QR pela câmera e por *deep link*, confirmação, lista de desktops, bloqueio por biometria.
 - [PRD-002](prd/prd-002-navegacao-do-workspace.md) inteiro: sessão, reconexão, árvore, busca, tema.

@@ -816,7 +816,7 @@ Um degradê na borda direita indica que há mais teclas enquanto houver. A barra
 | Armado (um toque; vale para a próxima tecla e solta) | fundo `bg.selected`, borda 2 `accent`, e a barra inferior do rótulo sublinhada |
 | Travado (dois toques; até o terceiro) | o mesmo mais o ícone `lock` (10) no canto da tecla |
 
-O modificador **vale para**: o próximo texto do teclado do sistema (`Ctrl` + "c" vai como `key { "c", Ctrl }`, nunca como `text`), e para as teclas da barra (setas, `Home`, `Tab`…), enviadas como `key` com os `mods`. `Shift` + letra do teclado do sistema vai como `key` com a letra já em maiúscula e o bit `Shift` (o desktop não muda a caixa por `Shift`); `Shift` + `Tab` e `Shift` + seta vão como `key` com o bit. `Esc` e `Fn` não consomem o armado. O estado vale **por tela do terminal** e zera ao sair dela.
+O modificador **vale para**: o próximo texto do teclado do sistema (`Ctrl` + "c" vai como `key { "c", Ctrl }`, nunca como `text`), e para as teclas da barra (setas, `Home`, `Tab`…), enviadas como `key` com os `mods`. `Shift` + letra do teclado do sistema vai como `key` com a letra já em maiúscula e o bit `Shift` (o desktop não muda a caixa por `Shift`); `Shift` + `Tab` e `Shift` + seta vão como `key` com o bit. `Esc` não consome o armado (a tecla `Fn` deixou de existir em 2026-11-18; `F1`–`F12` são teclas nomeadas como as outras e consomem). O estado vale **por tela do terminal** e zera ao sair dela.
 
 **Vibração.** Cada toque em tecla da barra dá um tique leve (*haptic*) se o aparelho suporta e a vibração das configurações está ligada. (Proposta: a mesma chave da campainha.)
 

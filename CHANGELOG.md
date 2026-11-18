@@ -21,10 +21,6 @@ Proposto até a medição do render em aparelho. Dívida de verificação no
 - **Modificador ligado fixado à esquerda da barra** (anatomia §4.8, RF-3.16; pedido do dono em 2026-11-18): `Shift`, `Ctrl` ou `Alt`, armado ou travado, sai da linha rolável e fica fixo à esquerda, com o visual de ligado, para nunca sumir da vista. Um toque nessa tecla o desliga na hora (`releaseModifier`, `ModifierKeys.release`); ao desligar, ou depois de gasto, ele volta ao seu lugar. O leitor de tela ouve "Toque para soltar".
 - **Opções de vista no menu da aba**: "Caber a largura", "Seguir o cursor" (item de marcar, `SheetItem` ganha `checked`) e "Voltar ao fim" passam a ser os primeiros itens do menu de reticências do terminal, sempre presentes e esmaecidos quando não se aplicam.
 
-### Removido
-
-- Os **botões flutuantes** da grade (`FloatingButtons`) e os tokens `fab`, `fab.gap`, `fab.inset`, `icon.fab`, `shadow.fab` e `opacity.fab`: as três opções foram para o menu da aba, e a grade ficou livre.
-
 - **Tecla `Shift` na barra de teclas** (entre `Tab` e `Ctrl`), modificador com trava como `Ctrl` e `Alt` (RF-3.16): `Shift` + `Tab`, `Shift` + setas e `Shift` + letra do teclado do sistema. A letra vai em maiúscula, com o bit `Shift`, porque o desktop não muda a caixa por `Shift`.
 
 - **Projeto Expo** SDK 58 (React Native 0.88.1, React 19.3.0, Hermes,
@@ -191,6 +187,7 @@ Proposto até a medição do render em aparelho. Dívida de verificação no
 
 ### Removido
 
+- Os **botões flutuantes** da grade (`FloatingButtons`) e os tokens `fab`, `fab.gap`, `fab.inset`, `icon.fab`, `shadow.fab` e `opacity.fab`: as três opções foram para o menu da aba, e a grade ficou livre.
 - O diálogo próprio de fechar aba fixada (chaves `tab_menu.close_pinned_title`
   e `tab_menu.close_pinned_body`), substituído pela confirmação do desktop.
 - Chaves do catálogo que as telas não usaram, entre elas `paste.confirm_title`,
