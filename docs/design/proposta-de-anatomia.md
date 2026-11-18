@@ -804,6 +804,8 @@ Os três ficam sempre no menu e **esmaecem** quando não se aplicam (regra do §
 
 Um degradê na borda direita indica que há mais teclas enquanto houver. A barra abre mostrando o início (`Esc`).
 
+**Modificador ligado, fixado à esquerda (pedido do dono, 2026-11-18).** Como a linha inteira rola, um `Shift`, `Ctrl` ou `Alt` armado ou travado poderia ficar fora da vista. Por isso, **enquanto está ligado, ele sai da linha rolável e fica fixado à esquerda da barra**, fora da rolagem, com o visual de ligado da tabela abaixo (e o ícone `lock` se travado), seguido de um filete (`keybar.separator`). Vários ligados ficam lado a lado, na ordem `Shift`, `Ctrl`, `Alt`. **Um toque na tecla fixada a desliga na hora**, armada ou travada (não segue o ciclo); para travar, o usuário toca duas vezes a tecla no seu lugar da linha. Ao ser desligado, ou ao ser gasto pela tecla seguinte (se só armado), ele volta ao seu lugar e a linha reflui. O leitor de tela ouve o estado e a dica "Toque para soltar".
+
 **Histórico do arranjo.** A proposta de 2026-11-16 fixava `Esc`…`Alt` à esquerda e rolava o resto. A de 2026-11-18, de duas linhas (altura 100) com um teclado de setas à parte e símbolos, foi implementada e **recusada pelo dono no mesmo dia**: a barra voltou a uma linha só, agora toda rolável. Sem símbolos (`|` `~` `/` `\`…) e sem `Fn`; as opções de vista da grade seguem no menu da aba (§4.7), sem botões flutuantes.
 
 **Modificadores com trava (RF-3.16).** `Shift`, `Ctrl` e `Alt` têm três estados, **sempre distinguíveis sem a cor**:

@@ -9,7 +9,7 @@ primeira versão publicada nas lojas.
 Implementação inicial: a camada de lógica (2026-11-16) e as telas dos PRDs 001
 a 004 (2026-11-17), conforme a [anatomia das telas](docs/design/proposta-de-anatomia.md)
 aprovada. O app segue a **especificação 0.4** do protocolo. Tudo o que entrou é
-verificado por teste automatizado em Node (`pnpm test`: 1621 testes em 128
+verificado por teste automatizado em Node (`pnpm test`: 1632 testes em 128
 suítes, com `jest-expo` e `@testing-library/react-native`); **nada foi rodado
 num aparelho**, e o [ADR-0002](docs/adr/0002-render-da-grade-com-skia.md) segue
 Proposto até a medição do render em aparelho. Dívida de verificação no
@@ -18,6 +18,7 @@ Proposto até a medição do render em aparelho. Dívida de verificação no
 ### Adicionado
 
 - **Barra de teclas toda rolável, em uma linha** (anatomia §4.8; RF-3.15; pedido do dono em 2026-11-18): `Esc`, `Tab`, `Shift`, `Ctrl` e `Alt` agora rolam junto com o resto, na ordem `Esc Tab Shift Ctrl Alt | ← ↓ ↑ → | Home End PgUp PgDn | Colar | F1…F12`, em grupos separados por filetes. As teclas `F1`–`F12` ficam sempre à mão, no fim da linha, e **não há mais `Fn`**. Uma primeira versão do dia, com duas linhas, teclado de setas à parte e símbolos (`fa308d6`), foi recusada pelo dono e desfeita.
+- **Modificador ligado fixado à esquerda da barra** (anatomia §4.8, RF-3.16; pedido do dono em 2026-11-18): `Shift`, `Ctrl` ou `Alt`, armado ou travado, sai da linha rolável e fica fixo à esquerda, com o visual de ligado, para nunca sumir da vista. Um toque nessa tecla o desliga na hora (`releaseModifier`, `ModifierKeys.release`); ao desligar, ou depois de gasto, ele volta ao seu lugar. O leitor de tela ouve "Toque para soltar".
 - **Opções de vista no menu da aba**: "Caber a largura", "Seguir o cursor" (item de marcar, `SheetItem` ganha `checked`) e "Voltar ao fim" passam a ser os primeiros itens do menu de reticências do terminal, sempre presentes e esmaecidos quando não se aplicam.
 
 ### Removido

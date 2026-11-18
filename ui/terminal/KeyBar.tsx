@@ -9,9 +9,14 @@
 // `←` `↓` `↑` `→` (they repeat while held); `Home`, `End`, `PgUp`, `PgDn`;
 // `Paste`; and `F1`…`F12`, always in reach (no key opens them).
 //
+// A modifier that is on (armed or locked) is pinned: it leaves the scrolling
+// row and sits at the left of the bar, outside the scroll, in its on look, so
+// it stays in view wherever the row is scrolled. A tap on a pinned key turns
+// it off at once (to lock one, tap its place in the row twice).
+//
 // The bar sends nothing itself: keys go to `onKey` (the terminal controller
-// adds the armed modifiers), `Shift`/`Ctrl`/`Alt` to `onModifier`, and `Paste`
-// to `onPaste`. Every touch on a key gives a light haptic tick when the
+// adds the armed modifiers), a tap on `Shift`/`Ctrl`/`Alt` to `onModifier`, the
+// release of a pinned one to `onReleaseModifier`, and `Paste` to `onPaste`. Every touch on a key gives a light haptic tick when the
 // vibration setting is on (the same setting as the bell). The screen shows the
 // bar only while the system keyboard is open, stuck to it.
 import { Fragment, useCallback, useId, useState } from "react";
@@ -48,8 +53,10 @@ export type KeyBarProps = {
   readonly modifiers: TerminalModifiers;
   /** A key that sends a named key (`Esc`, `Tab`, arrows, navigation, `F1`–`F12`); arrows repeat. */
   readonly onKey: (id: KeyBarKeyId) => void;
-  /** A tap on `Shift`, `Ctrl` or `Alt`. */
+  /** A tap on `Shift`, `Ctrl` or `Alt` in the scrolling row. */
   readonly onModifier: (modifier: KeyBarModifierId) => void;
+  /** A tap on a pinned (on) modifier: turn it off. */
+  readonly onReleaseModifier: (modifier: KeyBarModifierId) => void;
   /** The `Paste` key (`clipboard-paste`). */
   readonly onPaste: () => void;
   readonly testID?: string;
@@ -185,7 +192,14 @@ function Fade({ testID }: { readonly testID: string }) {
 type ScrollMetrics = { readonly x: number; readonly viewport: number; readonly content: number };
 
 /** The special-keys bar. */
-export function KeyBar({ modifiers, onKey, onModifier, onPaste, testID = "keybar" }: KeyBarProps) {
+export function KeyBar({
+  modifiers,
+  onKey,
+  onModifier,
+  onReleaseModifier,
+  onPaste,
+  testID = "keybar",
+}: KeyBarProps) {
   const { t } = useT();
   const { colors } = useTheme();
   const tick = useKeyTick();
@@ -198,6 +212,10 @@ export function KeyBar({ modifiers, onKey, onModifier, onPaste, testID = "keybar
   const pressModifier = (modifier: KeyBarModifierId) => () => {
     tick();
     onModifier(modifier);
+  };
+  const releaseModifier = (modifier: KeyBarModifierId) => () => {
+    tick();
+    onReleaseModifier(modifier);
   };
   const fireArrow = (id: ArrowId) => (repeat: boolean) => {
     if (!repeat) {
@@ -228,6 +246,12 @@ export function KeyBar({ modifiers, onKey, onModifier, onPaste, testID = "keybar
   const moreToTheRight = maxX - Math.min(metrics.x, maxX) > 0.5;
 
   const row = { flexDirection: "row", alignItems: "center", gap: spacing.keyGap } as const;
+
+  /** The modifiers that are on, in the order of the layout: they are pinned at the left. */
+  const isOn = (id: (typeof KEY_BAR_LAYOUT)[number]): id is KeyBarModifierId =>
+    id !== "paste" && isKeyBarModifier(id) && modifiers[id] !== "off";
+  const pinned = KEY_BAR_LAYOUT.filter(isOn);
+  const scrolling = KEY_BAR_LAYOUT.filter((id) => !isOn(id));
 
   /** One key of `KEY_BAR_LAYOUT`. */
   const key = (id: (typeof KEY_BAR_LAYOUT)[number]) => {
@@ -285,13 +309,36 @@ export function KeyBar({ modifiers, onKey, onModifier, onPaste, testID = "keybar
       testID={testID}
       style={{
         height: size.keybarHeight,
+        ...row,
         paddingLeft: spacing.keyMargin,
         backgroundColor: colors.bgBar,
         borderTopWidth: size.borderWidth,
         borderTopColor: colors.borderRow,
       }}
     >
-      <View style={{ flex: 1, justifyContent: "center" }} onLayout={onViewportLayout} testID={`${testID}-viewport`}>
+      {pinned.length === 0 ? null : (
+        <>
+          <View style={row} testID={`${testID}-pinned`}>
+            {pinned.map((id) => (
+              <KeyBarKey
+                key={id}
+                label={t(MODIFIER[id].label)}
+                accessibilityLabel={t(MODIFIER[id].a11y, { state: t(STATE_KEYS[modifiers[id]]) })}
+                accessibilityHint={t("keybar.a11y.release_hint")}
+                modifierState={modifiers[id]}
+                onPress={releaseModifier(id)}
+                testID={`${testID}-pinned-${id}`}
+              />
+            ))}
+          </View>
+          <Separator />
+        </>
+      )}
+      <View
+        style={{ flex: 1, alignSelf: "stretch", justifyContent: "center" }}
+        onLayout={onViewportLayout}
+        testID={`${testID}-viewport`}
+      >
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -302,7 +349,7 @@ export function KeyBar({ modifiers, onKey, onModifier, onPaste, testID = "keybar
           contentContainerStyle={{ ...row, paddingRight: spacing.keyMargin }}
           testID={`${testID}-scroll`}
         >
-          {KEY_BAR_LAYOUT.map((id) => (
+          {scrolling.map((id) => (
             <Fragment key={id}>
               {GROUP_STARTS.has(id) ? <Separator /> : null}
               {key(id)}

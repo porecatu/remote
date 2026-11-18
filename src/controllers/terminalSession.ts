@@ -215,6 +215,8 @@ export interface TerminalSession {
   pressNamedKey(key: NamedKey): boolean;
   /** Off -> once -> locked -> off (RF-3.16). */
   tapModifier(modifier: "ctrl" | "alt" | "shift"): void;
+  /** Turns one modifier off at once, armed or locked: the tap on its pinned key (anatomy §4.8). */
+  releaseModifier(modifier: "ctrl" | "alt" | "shift"): void;
   /** Paste (RF-3.17): with a line break, nothing goes before `pasteConfirm()`. */
   pasteRequest(text: string): PasteRequestResult;
   /** Sends the paste waiting for confirmation. False when there is none or it was refused. */
@@ -834,6 +836,12 @@ export function createTerminalSession(deps: TerminalSessionDeps): TerminalSessio
     tapModifier(modifier): void {
       if (!closed) {
         modifiers.tap(modifier);
+      }
+    },
+
+    releaseModifier(modifier): void {
+      if (!closed) {
+        modifiers.release(modifier);
       }
     },
 

@@ -290,6 +290,7 @@
   "keybar.a11y.pgup": "Page Up",
   "keybar.a11y.pgdn": "Page Down",
   "keybar.a11y.function": "F{number}",
+  "keybar.a11y.release_hint": "Tap to release",
   "keybar.state.off": "released",
   "keybar.state.once": "armed",
   "keybar.state.locked": "locked",

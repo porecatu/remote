@@ -475,6 +475,9 @@ function TerminalKeyBar({
       onModifier={(modifier) => {
         terminal.tapModifier(modifier);
       }}
+      onReleaseModifier={(modifier) => {
+        terminal.releaseModifier(modifier);
+      }}
       onPaste={() => {
         void onPaste();
       }}

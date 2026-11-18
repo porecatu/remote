@@ -19,6 +19,8 @@ export type KeyBarKeyProps = KeyBarKeyFace & {
   readonly accessibilityLabel: string;
   /** Set on `Shift`, `Ctrl` and `Alt` only: the look of the state (§4.8). */
   readonly modifierState?: ModifierState;
+  /** What the screen reader adds after the label (the pinned modifiers say how to release). */
+  readonly accessibilityHint?: string;
   readonly onPress: () => void;
   /** Touch start and end, for the keys that repeat while held. */
   readonly onPressIn?: () => void;
@@ -28,7 +30,7 @@ export type KeyBarKeyProps = KeyBarKeyFace & {
 
 /** A key of the special-keys bar. */
 export function KeyBarKey(props: KeyBarKeyProps) {
-  const { accessibilityLabel, modifierState, onPress, onPressIn, onPressOut, testID } = props;
+  const { accessibilityLabel, accessibilityHint, modifierState, onPress, onPressIn, onPressOut, testID } = props;
   const { colors } = useTheme();
   const engaged = modifierState === "once" || modifierState === "locked";
 
@@ -39,6 +41,7 @@ export function KeyBarKey(props: KeyBarKeyProps) {
       {...(onPressOut === undefined ? {} : { onPressOut })}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
+      {...(accessibilityHint === undefined ? {} : { accessibilityHint })}
       {...(testID === undefined ? {} : { testID })}
       style={({ pressed }): StyleProp<ViewStyle> => [
         {

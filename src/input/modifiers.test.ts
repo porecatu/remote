@@ -81,6 +81,19 @@ describe("createModifierKeys", () => {
     expect(keys.state("shift")).toBe("once");
   });
 
+  it("release turns one modifier off, armed or locked, and leaves the others alone", () => {
+    const keys = createModifierKeys();
+    keys.tap("ctrl");
+    keys.tap("alt");
+    keys.tap("alt");
+    keys.tap("shift");
+    keys.release("alt");
+    expect(keys.snapshot()).toMatchObject({ ctrl: "once", alt: "off", shift: "once" });
+    keys.release("ctrl");
+    expect(keys.snapshot()).toMatchObject({ ctrl: "off", alt: "off", shift: "once" });
+    expect(keys.peek()).toBe(MODIFIER_BITS.shift);
+  });
+
   it("reset turns everything off, locked included", () => {
     const keys = createModifierKeys();
     keys.tap("ctrl");

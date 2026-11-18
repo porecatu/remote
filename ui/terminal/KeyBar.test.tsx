@@ -22,6 +22,7 @@ afterEach(() => {
 type Rig = {
   readonly onKey: jest.Mock<void, [KeyBarKeyId]>;
   readonly onModifier: jest.Mock<void, [KeyBarModifierId]>;
+  readonly onReleaseModifier: jest.Mock<void, [KeyBarModifierId]>;
   readonly onPaste: jest.Mock<void, []>;
   readonly services: TestServices;
   rerender(modifiers: TerminalModifiers): Promise<void>;
@@ -30,9 +31,16 @@ type Rig = {
 async function setup(options: { modifiers?: TerminalModifiers; services?: TestServices } = {}): Promise<Rig> {
   const onKey = jest.fn<void, [KeyBarKeyId]>();
   const onModifier = jest.fn<void, [KeyBarModifierId]>();
+  const onReleaseModifier = jest.fn<void, [KeyBarModifierId]>();
   const onPaste = jest.fn<void, []>();
   const bar = (modifiers: TerminalModifiers) => (
-    <KeyBar modifiers={modifiers} onKey={onKey} onModifier={onModifier} onPaste={onPaste} />
+    <KeyBar
+      modifiers={modifiers}
+      onKey={onKey}
+      onModifier={onModifier}
+      onReleaseModifier={onReleaseModifier}
+      onPaste={onPaste}
+    />
   );
   const result = await renderWithServices(bar(options.modifiers ?? OFF), {
     ...(options.services === undefined ? {} : { services: options.services }),
@@ -40,6 +48,7 @@ async function setup(options: { modifiers?: TerminalModifiers; services?: TestSe
   return {
     onKey,
     onModifier,
+    onReleaseModifier,
     onPaste,
     services: result.services,
     async rerender(modifiers) {
@@ -112,7 +121,7 @@ describe("KeyBar", () => {
 
     const dark = palettes.dark;
     for (const id of ["ctrl", "alt", "shift"]) {
-      expect(StyleSheet.flatten(screen.getByTestId(`keybar-${id}`).props.style)).toMatchObject({
+      expect(StyleSheet.flatten(screen.getByTestId(`keybar-pinned-${id}`).props.style)).toMatchObject({
         backgroundColor: dark.bgSelected,
         borderColor: dark.accent,
         borderWidth: 2,
@@ -122,14 +131,85 @@ describe("KeyBar", () => {
       textDecorationLine: "underline",
     });
     // Locked adds the lock; armed does not.
-    expect(screen.getByTestId("keybar-alt-lock")).toBeOnTheScreen();
-    expect(screen.queryByTestId("keybar-ctrl-lock")).toBeNull();
+    expect(screen.getByTestId("keybar-pinned-alt-lock")).toBeOnTheScreen();
+    expect(screen.queryByTestId("keybar-pinned-ctrl-lock")).toBeNull();
 
     await rig.rerender(OFF);
     expect(StyleSheet.flatten(screen.getByTestId("keybar-ctrl").props.style)).toMatchObject({
       backgroundColor: dark.bgKey,
     });
     expect(StyleSheet.flatten(screen.getByText("Ctrl").props.style).textDecorationLine).toBeUndefined();
+  });
+
+  describe("a modifier that is on is pinned at the left", () => {
+    it("pins nothing while every modifier is off", async () => {
+      await setup();
+      expect(screen.queryByTestId("keybar-pinned")).toBeNull();
+    });
+
+    it("moves an armed or locked modifier out of the scrolling row, to a group before it", async () => {
+      const rig = await setup();
+      await rig.rerender({ ctrl: "once", alt: "off", shift: "locked" });
+      const pinned = screen.getByTestId("keybar-pinned");
+      const scroll = screen.getByTestId("keybar-scroll");
+      // In the order of the layout: Shift, then Ctrl.
+      expect(pinned).toContainElement(screen.getByTestId("keybar-pinned-shift"));
+      expect(pinned).toContainElement(screen.getByTestId("keybar-pinned-ctrl"));
+      expect(screen.queryByTestId("keybar-pinned-alt")).toBeNull();
+      // Outside the scroll view, so it stays in view wherever the row is scrolled.
+      expect(scroll).not.toContainElement(screen.getByTestId("keybar-pinned-shift"));
+      // Gone from the row, which keeps the others (Alt is off and stays in place).
+      expect(screen.queryByTestId("keybar-shift")).toBeNull();
+      expect(screen.queryByTestId("keybar-ctrl")).toBeNull();
+      expect(scroll).toContainElement(screen.getByTestId("keybar-alt"));
+      expect(screen.getAllByRole("button").map((e) => String(e.props.testID).replace("keybar-", ""))).toEqual([
+        "pinned-shift",
+        "pinned-ctrl",
+        "esc",
+        "tab",
+        "alt",
+        ...KEY_BAR_LAYOUT.slice(5),
+      ]);
+    });
+
+    it("puts the key back in its place when it is turned off", async () => {
+      const rig = await setup({ modifiers: { ctrl: "locked", alt: "off", shift: "off" } });
+      expect(screen.queryByTestId("keybar-ctrl")).toBeNull();
+      await rig.rerender(OFF);
+      expect(screen.queryByTestId("keybar-pinned")).toBeNull();
+      expect(screen.getByTestId("keybar-scroll")).toContainElement(screen.getByTestId("keybar-ctrl"));
+    });
+
+    it("turns the modifier off with one tap, armed or locked, through onReleaseModifier", async () => {
+      const rig = await setup({ modifiers: { ctrl: "once", alt: "locked", shift: "off" } });
+      await fireEvent.press(button("Control, armed"));
+      await fireEvent.press(button("Alt, locked"));
+      expect(rig.onReleaseModifier.mock.calls).toEqual([["ctrl"], ["alt"]]);
+      // Not the cycle of the tap: nothing goes through onModifier.
+      expect(rig.onModifier).not.toHaveBeenCalled();
+      expect(rig.onKey).not.toHaveBeenCalled();
+    });
+
+    it("still cycles from the scrolling row: a tap on the key of the row goes through onModifier", async () => {
+      const rig = await setup({ modifiers: { ctrl: "off", alt: "off", shift: "once" } });
+      await fireEvent.press(button("Control, released"));
+      expect(rig.onModifier.mock.calls).toEqual([["ctrl"]]);
+      expect(rig.onReleaseModifier).not.toHaveBeenCalled();
+    });
+
+    it("tells the screen reader how to release it, and ticks on the tap", async () => {
+      const rig = await setup({ modifiers: { ctrl: "once", alt: "off", shift: "off" } });
+      expect(button("Control, armed").props.accessibilityHint).toBe("Tap to release");
+      expect(button("Escape").props.accessibilityHint).toBeUndefined();
+      await fireEvent.press(button("Control, armed"));
+      expect(rig.services.fakes.haptics.calls).toEqual(["impact-light"]);
+    });
+
+    it("says it in pt_BR", async () => {
+      const services = createTestServices({ systemLocales: [{ languageCode: "pt", languageTag: "pt-BR" }] });
+      await setup({ services, modifiers: { ctrl: "once", alt: "off", shift: "off" } });
+      expect(button("Controle, armado").props.accessibilityHint).toBe("Toque para soltar");
+    });
   });
 
   it("speaks the states in pt_BR", async () => {

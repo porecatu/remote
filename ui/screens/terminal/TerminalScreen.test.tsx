@@ -359,6 +359,39 @@ describe("TerminalScreen — input", () => {
     expect(received(r, "paste")).toEqual([{ type: "paste", pane: 100, text: "uptime" }]);
   });
 
+  it("pins an armed modifier at the left of the bar, and one tap on it turns it off", async () => {
+    const r = await rig();
+    await openKeyboard();
+    expect(screen.queryByTestId("keybar-pinned")).toBeNull();
+
+    await fireEvent.press(screen.getByTestId("keybar-ctrl"));
+    expect(screen.getByTestId("keybar-pinned-ctrl")).toBeTruthy();
+    expect(screen.queryByTestId("keybar-ctrl")).toBeNull();
+
+    // One tap releases it, so the next text goes plain.
+    await fireEvent.press(screen.getByTestId("keybar-pinned-ctrl"));
+    expect(screen.queryByTestId("keybar-pinned")).toBeNull();
+    expect(screen.getByTestId("keybar-ctrl")).toBeTruthy();
+    await fireEvent.changeText(captureField(), "c");
+    expect(received(r, "key")).toEqual([]);
+    expect(received(r, "text-input")).toEqual([{ type: "text-input", pane: 100, text: "c" }]);
+  });
+
+  it("releases a locked modifier from its pinned key, and unpins an armed one once a key is sent", async () => {
+    const r = await rig();
+    await openKeyboard();
+    await fireEvent.press(screen.getByTestId("keybar-alt"));
+    await fireEvent.press(screen.getByTestId("keybar-pinned-alt"));
+    expect(screen.queryByTestId("keybar-pinned")).toBeNull();
+
+    // Armed: sending a key spends it, and the pinned key goes away by itself.
+    await fireEvent.press(screen.getByTestId("keybar-shift"));
+    expect(screen.getByTestId("keybar-pinned-shift")).toBeTruthy();
+    await fireEvent.press(screen.getByTestId("keybar-tab"));
+    expect(received(r, "key")).toEqual([{ type: "key", pane: 100, key: NamedKey.tab, mods: 0x04 }]);
+    expect(screen.queryByTestId("keybar-pinned")).toBeNull();
+  });
+
   it("sends an arrow of the bar with the armed modifier", async () => {
     const r = await rig();
     await openKeyboard();

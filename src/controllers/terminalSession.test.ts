@@ -352,6 +352,20 @@ describe("terminal session: input", () => {
     expect(r.terminal.getState().modifiers.alt).toBe("locked");
   });
 
+  it("releases a modifier at once, armed or locked, without sending anything", () => {
+    const r = rig();
+    r.terminal.tapModifier("ctrl");
+    r.terminal.tapModifier("alt");
+    r.terminal.tapModifier("alt");
+    expect(r.terminal.getState().modifiers).toMatchObject({ ctrl: "once", alt: "locked" });
+    r.terminal.releaseModifier("alt");
+    r.terminal.releaseModifier("ctrl");
+    expect(r.terminal.getState().modifiers).toMatchObject({ ctrl: "off", alt: "off" });
+    r.terminal.typeText("c");
+    expect(received(r, "key")).toEqual([]);
+    expect(received(r, "text-input")).toEqual([{ type: "text-input", pane: 100, text: "c" }]);
+  });
+
   it("sends Esc plain and keeps an armed modifier for the next key (anatomy §4.8)", () => {
     const r = rig();
     r.terminal.tapModifier("ctrl");

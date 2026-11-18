@@ -65,6 +65,8 @@ export function afterConsume(snapshot: ModifiersSnapshot): ModifiersSnapshot {
 export type ModifierKeys = {
   /** Applies a tap on the bar button of `modifier`. */
   tap(modifier: Modifier): void;
+  /** Turns `modifier` off, armed or locked (the pinned key of the bar, anatomy §4.8). */
+  release(modifier: Modifier): void;
   state(modifier: Modifier): ModifierState;
   snapshot(): ModifiersSnapshot;
   /** Current mask without changing anything (for display or text input). */
@@ -94,6 +96,9 @@ export function createModifierKeys(): ModifierKeys {
   return {
     tap(modifier) {
       set({ ...current, [modifier]: nextOnTap(current[modifier]) });
+    },
+    release(modifier) {
+      set({ ...current, [modifier]: "off" });
     },
     state: (modifier) => current[modifier],
     snapshot: () => current,
