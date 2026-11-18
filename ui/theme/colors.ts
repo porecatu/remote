@@ -199,8 +199,8 @@ export function rgbToCss(rgb: Rgb, alpha = 1): string {
 }
 
 /**
- * A `#rrggbb` token with an alpha (0..1), e.g. `bgBar` at `opacity.fab` behind
- * the floating buttons, or at 0 for the start of the key bar fade.
+ * A `#rrggbb` token with an alpha (0..1), e.g. `bgSheet` at `opacity.zoomChip`
+ * behind the zoom chip.
  */
 export function withAlpha(hex: string, alpha: number): string {
   const match = /^#([0-9a-f]{6})$/i.exec(hex);
