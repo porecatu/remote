@@ -17,8 +17,12 @@ export type KeyBarKeyFace = { readonly label: string } | { readonly icon: IconNa
 export type KeyBarKeyProps = KeyBarKeyFace & {
   /** What the screen reader says, already translated (with the state of a modifier). */
   readonly accessibilityLabel: string;
-  /** Set on `Ctrl` and `Alt` only: the look of the state (§4.8). */
+  /** Set on `Shift`, `Ctrl` and `Alt` only: the look of the state (§4.8). */
   readonly modifierState?: ModifierState;
+  /** Set on `Fn` only: the F keys are open. Looks armed (without the underline) and says "expanded". */
+  readonly open?: boolean;
+  /** Takes an equal share of the row instead of a fixed 44 width (row 1 of the bar, §4.8). */
+  readonly grow?: boolean;
   readonly onPress: () => void;
   /** Touch start and end, for the keys that repeat while held. */
   readonly onPressIn?: () => void;
@@ -28,9 +32,10 @@ export type KeyBarKeyProps = KeyBarKeyFace & {
 
 /** A key of the special-keys bar. */
 export function KeyBarKey(props: KeyBarKeyProps) {
-  const { accessibilityLabel, modifierState, onPress, onPressIn, onPressOut, testID } = props;
+  const { accessibilityLabel, modifierState, open, grow = false, onPress, onPressIn, onPressOut, testID } = props;
   const { colors } = useTheme();
-  const engaged = modifierState === "once" || modifierState === "locked";
+  const armed = modifierState === "once" || modifierState === "locked";
+  const engaged = armed || open === true;
 
   return (
     <Pressable
@@ -39,12 +44,15 @@ export function KeyBarKey(props: KeyBarKeyProps) {
       {...(onPressOut === undefined ? {} : { onPressOut })}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
+      {...(open === undefined ? {} : { accessibilityState: { expanded: open } })}
       {...(testID === undefined ? {} : { testID })}
       style={({ pressed }): StyleProp<ViewStyle> => [
         {
-          minWidth: size.key,
+          // A growing key shares the row; it may be narrower than 44 on a
+          // narrow phone, and its padding gives way to the label.
+          ...(grow ? { flex: 1, minWidth: 0 } : { minWidth: size.key }),
           height: size.key,
-          paddingHorizontal: spacing.keyPaddingX,
+          paddingHorizontal: grow ? spacing.keyPaddingXGrow : spacing.keyPaddingX,
           borderRadius: radius.control,
           // The border is always there (transparent when released), so arming
           // a modifier does not move its label.
@@ -64,7 +72,7 @@ export function KeyBarKey(props: KeyBarKeyProps) {
           style={[
             typeStyle("key"),
             { color: engaged ? colors.textTitle : colors.textBody },
-            engaged ? { textDecorationLine: "underline" } : null,
+            armed ? { textDecorationLine: "underline" } : null,
           ]}
         >
           {props.label}

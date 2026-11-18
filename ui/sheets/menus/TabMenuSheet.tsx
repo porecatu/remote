@@ -2,7 +2,10 @@
 // The menu of a tab (anatomy §4.12.1, PRD-004 RF-4.2, RF-4.6, RF-4.9): a
 // sheet titled with the tab's title, with "In group G · Window N" under it,
 // opened by the long press or the menu button of a tree row and by the
-// terminal bar. Items, in the anatomy's order: Rename, Move to group…, Move
+// terminal bar. From the terminal the view options of the grid come first (Fit
+// the width, Follow the cursor, Back to the end: always there, dimmed when they
+// do not apply; the follow toggle shows a check), then a divider. Items, in the
+// anatomy's order: Rename, Move to group…, Move
 // to window… (dimmed with a note when the desktop has one window), New group
 // with this tab…, a divider, Close pane (only from the terminal, on a tab
 // with more than one pane, for the pane seen there) and Close tab
@@ -38,11 +41,33 @@ import {
 import { itemPendingState, pendingKinds, sendOrWarn, windowNumber, type SheetSession } from "./shared";
 import { useRetained } from "./useRetained";
 
+/**
+ * The grid's view options the terminal hands the menu (anatomy §4.7): what the
+ * floating buttons used to do. A snapshot taken when the menu opens.
+ */
+export type TerminalViewOptions = {
+  /** The zoom is "fit the width". */
+  readonly isFit: boolean;
+  /** The grid is wider than the screen. */
+  readonly wide: boolean;
+  /** "Follow the cursor" is on. */
+  readonly followingCursor: boolean;
+  /** The view is at the bottom of the live grid. */
+  readonly atBottom: boolean;
+  readonly onFitWidth: () => void;
+  /** Receives the new state of the toggle. */
+  readonly onFollowCursor: (on: boolean) => void;
+  readonly onScrollToBottom: () => void;
+};
+
 export type TabMenuProps = {
   readonly session: SheetSession;
   readonly tabId: TabId;
-  /** Opened from the terminal, which shows this pane: Close pane applies to it. */
-  readonly fromTerminal?: { readonly paneId: PaneId };
+  /**
+   * Opened from the terminal, which shows this pane: Close pane applies to it,
+   * and the view options (`view`) come first.
+   */
+  readonly fromTerminal?: { readonly paneId: PaneId; readonly view?: TerminalViewOptions };
   /** Open the form sheets (§4.12.3 to §4.12.6); called after the menu starts closing. */
   readonly onRename: (tab: TabId) => void;
   readonly onMoveToGroup: (tab: TabId) => void;
@@ -126,6 +151,7 @@ export function TabMenuSheet({
   const { t } = tr;
   const overlay = useOverlay();
   const viewedPane = fromTerminal?.paneId;
+  const viewOptions = fromTerminal?.view;
   const current = useStoreState(
     session.store,
     (state) => tabMenuContext(state, tabId, viewedPane),
@@ -156,6 +182,12 @@ export function TabMenuSheet({
     callback(tabId);
   };
 
+  // A view option acts on the grid, not on the desktop: close the menu, then act.
+  const act = (action: () => void) => () => {
+    close();
+    action();
+  };
+
   // A pinned tab too: the desktop asks for the confirmation (`confirm-request`).
   const onCloseTab = () => {
     close();
@@ -182,6 +214,36 @@ export function TabMenuSheet({
 
   return (
     <Sheet title={context.title} {...(subtitle === undefined ? {} : { subtitle })} testID="tab-menu">
+      {viewOptions === undefined ? null : (
+        <>
+          <SheetItem
+            label={t("terminal.fit_width")}
+            icon="scan"
+            onPress={act(viewOptions.onFitWidth)}
+            disabled={viewOptions.isFit}
+            testID="tab-menu-fit-width"
+          />
+          <SheetItem
+            label={t("terminal.follow_cursor")}
+            icon="locate-fixed"
+            checked={viewOptions.wide && viewOptions.followingCursor}
+            onPress={act(() => {
+              viewOptions.onFollowCursor(!viewOptions.followingCursor);
+            })}
+            disabled={!viewOptions.wide}
+            {...(viewOptions.wide ? {} : { note: t("tab_menu.not_wide_note") })}
+            testID="tab-menu-follow-cursor"
+          />
+          <SheetItem
+            label={t("terminal.scroll_to_bottom")}
+            icon="arrow-down-to-line"
+            onPress={act(viewOptions.onScrollToBottom)}
+            disabled={viewOptions.atBottom}
+            testID="tab-menu-scroll-to-bottom"
+          />
+          <SheetDivider testID="tab-menu-view-divider" />
+        </>
+      )}
       <SheetItem
         label={t("common.rename")}
         icon="pencil"

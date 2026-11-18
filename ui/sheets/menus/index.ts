@@ -17,6 +17,7 @@ export {
   type TabMenuContext,
   type TabMenuProps,
   type TabMenuSheetProps,
+  type TerminalViewOptions,
 } from "./TabMenuSheet";
 export {
   itemPendingState,

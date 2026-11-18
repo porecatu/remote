@@ -1,23 +1,25 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The special-keys bar of the terminal (anatomy §4.8, PRD-003 RF-3.15,
-// RF-3.16, RF-3.17, RF-3.19): one row, 52 high, `bg.bar` with a `border.row`
-// on top, keys of 44 with a margin of 4 and a gap of 6.
+// RF-3.16, RF-3.17, RF-3.19): two rows of keys of 44, `bg.bar` with a
+// `border.row` on top, a margin of 4 and a gap of 6 (100 high; 52 in landscape,
+// where it is a single row).
 //
-// - `Esc`, `Tab`, `Shift`, `Ctrl`, `Alt` stay on the left, always visible.
-// - The rest scrolls: the arrows (they repeat while held), then `Home`, `End`,
-//   `PgUp`, `PgDn`, `Fn` and `Paste`, with a fade on the right edge while
-//   there is more to the right. The arrows scroll too: eight keys of 44 plus
-//   their gaps do not fit a phone in portrait next to the scrolling part.
-// - `Fn` swaps the scrolling group for `F1`…`F12`, behind an `x` key that
-//   goes back.
+// - Row 1, fixed, every key sharing the width: `Esc`, `Tab`, `Shift`, `Ctrl`,
+//   `Alt`, `Fn` and `Paste`.
+// - Row 2, scrolling, with a fade on the right edge while there is more to the
+//   right: `Home`, `End`, `PgUp`, `PgDn`, then the symbols the phone keyboard
+//   hides (`|` `~` `/` `\` `-` `_` `` ` ``), which go as text.
+// - `Fn` swaps row 2 for `F1`…`F12`, behind an `x` key that goes back; while it
+//   is open `Fn` itself looks on.
+// - The arrows are not here: they live in the arrow pad (`ArrowPad.tsx`).
 //
 // The bar sends nothing itself: keys go to `onKey` (the terminal controller
-// adds the armed modifiers), `Shift`/`Ctrl`/`Alt` to `onModifier`, and `Paste` to
-// `onPaste`. `Fn` and "close F" only change the bar. Every touch on a key
-// gives a light haptic tick when the vibration setting is on (the same setting
-// as the bell). The screen shows the bar only while the system keyboard is
-// open, stuck to it.
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+// adds the armed modifiers), symbols to `onText`, `Shift`/`Ctrl`/`Alt` to
+// `onModifier`, and `Paste` to `onPaste`. `Fn` and "close F" only change the
+// bar. Every touch on a key gives a light haptic tick when the vibration
+// setting is on (the same setting as the bell). The screen shows the bar only
+// while the system keyboard is open, stuck to it.
+import { useEffect, useId, useRef, useState } from "react";
 import {
   ScrollView,
   type ScrollViewInstance,
@@ -30,47 +32,47 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 
 import type { TerminalModifiers } from "@/controllers/terminalSession";
 import type { MessageKey } from "@/i18n/catalog";
-import { FUNCTION_KEYS, type KeyBarKeyId, type KeyBarModifierId } from "@/input/keyBar";
+import {
+  FUNCTION_KEYS,
+  KEY_BAR_FIXED,
+  KEY_BAR_NAVIGATION,
+  KEY_BAR_SYMBOLS,
+  type KeyBarKeyId,
+  type KeyBarModifierId,
+} from "@/input/keyBar";
 import type { ModifierState } from "@/input/modifiers";
 
-import type { IconName } from "../components/Icon";
-import { useStoreState } from "../hooks/useStoreState";
 import { useT } from "../i18n/LocaleProvider";
-import { useServices } from "../services/ServicesContext";
 import { size, spacing, useTheme } from "../theme";
 import { KeyBarKey } from "./KeyBarKey";
-import { useKeyRepeat } from "./useKeyRepeat";
+import { useKeyTick } from "./keyParts";
 
 export type KeyBarProps = {
   /** State of `Shift`, `Ctrl` and `Alt` (the terminal controller's `modifiers`). */
   readonly modifiers: TerminalModifiers;
-  /** A key that sends a named key (`Esc`, `Tab`, arrows, navigation, `F1`–`F12`); arrows repeat. */
+  /** A key that sends a named key (`Esc`, `Tab`, navigation, `F1`–`F12`). */
   readonly onKey: (id: KeyBarKeyId) => void;
   /** A tap on `Shift`, `Ctrl` or `Alt`. */
   readonly onModifier: (modifier: KeyBarModifierId) => void;
+  /** A symbol key: the text it types. */
+  readonly onText: (text: string) => void;
   /** The `Paste` key (`clipboard-paste`). */
   readonly onPaste: () => void;
+  /** Landscape: a single row, the fixed keys then the scrolling ones. */
+  readonly landscape?: boolean;
   readonly testID?: string;
 };
 
-type ArrowId = "left" | "down" | "up" | "right";
-type NavigationId = "home" | "end" | "pgup" | "pgdn";
+type NavigationId = (typeof KEY_BAR_NAVIGATION)[number];
 type FunctionId = (typeof FUNCTION_KEYS)[number];
+type FixedId = (typeof KEY_BAR_FIXED)[number];
 
-/** §4.8 order of the arrows: ← ↓ ↑ →. */
-const ARROWS: readonly { readonly id: ArrowId; readonly icon: IconName; readonly a11y: MessageKey }[] = [
-  { id: "left", icon: "arrow-left", a11y: "keybar.a11y.left" },
-  { id: "down", icon: "arrow-down", a11y: "keybar.a11y.down" },
-  { id: "up", icon: "arrow-up", a11y: "keybar.a11y.up" },
-  { id: "right", icon: "arrow-right", a11y: "keybar.a11y.right" },
-];
-
-const NAVIGATION: readonly { readonly id: NavigationId; readonly label: MessageKey; readonly a11y: MessageKey }[] = [
-  { id: "home", label: "keybar.label.home", a11y: "keybar.a11y.home" },
-  { id: "end", label: "keybar.label.end", a11y: "keybar.a11y.end" },
-  { id: "pgup", label: "keybar.label.pgup", a11y: "keybar.a11y.pgup" },
-  { id: "pgdn", label: "keybar.label.pgdn", a11y: "keybar.a11y.pgdn" },
-];
+const NAVIGATION: Readonly<Record<NavigationId, { readonly label: MessageKey; readonly a11y: MessageKey }>> = {
+  home: { label: "keybar.label.home", a11y: "keybar.a11y.home" },
+  end: { label: "keybar.label.end", a11y: "keybar.a11y.end" },
+  pgup: { label: "keybar.label.pgup", a11y: "keybar.a11y.pgup" },
+  pgdn: { label: "keybar.label.pgdn", a11y: "keybar.a11y.pgdn" },
+};
 
 const MODIFIER_A11Y: Readonly<Record<KeyBarModifierId, MessageKey>> = {
   shift: "keybar.a11y.shift",
@@ -87,39 +89,6 @@ const STATE_KEYS: Readonly<Record<ModifierState, MessageKey>> = {
 /** The number of a function key: `f7` is 7. */
 function functionNumber(id: FunctionId): number {
   return Number(id.slice(1));
-}
-
-/** A light tick per touch, only when the vibration setting is on. */
-function useKeyTick(): () => void {
-  const { haptics, settings } = useServices();
-  const enabled = useStoreState(settings.store, (state) => state.settings.bellVibration);
-  return useCallback(() => {
-    if (enabled) {
-      haptics.impactLight();
-    }
-  }, [enabled, haptics]);
-}
-
-type RepeatKeyProps = {
-  readonly icon: IconName;
-  readonly accessibilityLabel: string;
-  /** `repeat` is false for the touch itself, true for every repeat. */
-  readonly onFire: (repeat: boolean) => void;
-  readonly testID: string;
-};
-
-function RepeatKey({ icon, accessibilityLabel, onFire, testID }: RepeatKeyProps) {
-  const handlers = useKeyRepeat(onFire);
-  return (
-    <KeyBarKey
-      icon={icon}
-      accessibilityLabel={accessibilityLabel}
-      onPress={handlers.onPress}
-      onPressIn={handlers.onPressIn}
-      onPressOut={handlers.onPressOut}
-      testID={testID}
-    />
-  );
 }
 
 function Separator() {
@@ -166,26 +135,31 @@ function Fade({ testID }: { readonly testID: string }) {
 type ScrollMetrics = { readonly x: number; readonly viewport: number; readonly content: number };
 
 /** The special-keys bar. */
-export function KeyBar({ modifiers, onKey, onModifier, onPaste, testID = "keybar" }: KeyBarProps) {
+export function KeyBar({
+  modifiers,
+  onKey,
+  onModifier,
+  onText,
+  onPaste,
+  landscape = false,
+  testID = "keybar",
+}: KeyBarProps) {
   const { t } = useT();
   const { colors } = useTheme();
   const tick = useKeyTick();
   const [fnOpen, setFnOpen] = useState(false);
   const [metrics, setMetrics] = useState<ScrollMetrics>({ x: 0, viewport: 0, content: 0 });
   const scrollRef = useRef<ScrollViewInstance>(null);
-  // Where the swappable group starts inside the scrolling row.
-  const swapStart = useRef(0);
   const firstRender = useRef(true);
 
-  // Swapping the group shows its start, so "close F" and F1 are in view.
+  // Swapping row 2 shows its start, so "close F" and F1 (or Home) are in view.
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
       return;
     }
-    const x = swapStart.current;
-    scrollRef.current?.scrollTo({ x, animated: false });
-    setMetrics((current) => (current.x === x ? current : { ...current, x }));
+    scrollRef.current?.scrollTo({ x: 0, animated: false });
+    setMetrics((current) => (current.x === 0 ? current : { ...current, x: 0 }));
   }, [fnOpen]);
 
   const press = (id: KeyBarKeyId) => () => {
@@ -196,15 +170,13 @@ export function KeyBar({ modifiers, onKey, onModifier, onPaste, testID = "keybar
     tick();
     onModifier(modifier);
   };
-  const fireArrow = (id: ArrowId) => (repeat: boolean) => {
-    if (!repeat) {
-      tick();
-    }
-    onKey(id);
-  };
   const toggleFn = (open: boolean) => () => {
     tick();
     setFnOpen(open);
+  };
+  const type = (text: string) => () => {
+    tick();
+    onText(text);
   };
   const paste = () => {
     tick();
@@ -226,9 +198,6 @@ export function KeyBar({ modifiers, onKey, onModifier, onPaste, testID = "keybar
   const onContentSize = (content: number) => {
     setMetrics((current) => (current.content === content ? current : { ...current, content }));
   };
-  const onSwapLayout = (event: LayoutChangeEvent) => {
-    swapStart.current = event.nativeEvent.layout.x;
-  };
   // The scroll view clamps its offset when the content shrinks; half a point
   // of slack for its fractional offsets.
   const maxX = Math.max(0, metrics.content - metrics.viewport);
@@ -236,127 +205,156 @@ export function KeyBar({ modifiers, onKey, onModifier, onPaste, testID = "keybar
 
   const row = { flexDirection: "row", alignItems: "center", gap: spacing.keyGap } as const;
 
+  /** A key of row 1; `grow` shares the width in portrait. */
+  const fixedKey = (id: FixedId, grow: boolean) => {
+    const common = { grow, testID: `${testID}-${id}` };
+    switch (id) {
+      case "esc":
+      case "tab":
+        return (
+          <KeyBarKey
+            key={id}
+            {...common}
+            label={t(`keybar.label.${id}`)}
+            accessibilityLabel={t(`keybar.a11y.${id}`)}
+            onPress={press(id)}
+          />
+        );
+      case "shift":
+      case "ctrl":
+      case "alt":
+        return (
+          <KeyBarKey
+            key={id}
+            {...common}
+            label={t(`keybar.label.${id}`)}
+            accessibilityLabel={modifierLabel(id)}
+            modifierState={modifiers[id]}
+            onPress={pressModifier(id)}
+          />
+        );
+      case "fn":
+        return (
+          <KeyBarKey
+            key={id}
+            {...common}
+            label={t("keybar.label.fn")}
+            accessibilityLabel={t("keybar.a11y.fn")}
+            open={fnOpen}
+            onPress={toggleFn(!fnOpen)}
+          />
+        );
+      case "paste":
+        return (
+          <KeyBarKey
+            key={id}
+            {...common}
+            icon="clipboard-paste"
+            accessibilityLabel={t("common.paste")}
+            onPress={paste}
+          />
+        );
+    }
+  };
+
+  /** Row 2: the keys that scroll, with the fade while there is more to the right. */
+  const scrolling = (
+    <View
+      style={{ flex: 1, alignSelf: "stretch", justifyContent: "center" }}
+      onLayout={onViewportLayout}
+      testID={`${testID}-viewport`}
+    >
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyboardShouldPersistTaps="always"
+        onScrollEndDrag={onScroll}
+        onMomentumScrollEnd={onScroll}
+        onContentSizeChange={onContentSize}
+        contentContainerStyle={{ ...row, paddingRight: spacing.keyMargin }}
+        testID={`${testID}-scroll`}
+      >
+        {fnOpen ? (
+          <>
+            <KeyBarKey
+              icon="x"
+              accessibilityLabel={t("keybar.a11y.close_fn")}
+              onPress={toggleFn(false)}
+              testID={`${testID}-close-fn`}
+            />
+            {FUNCTION_KEYS.map((id) => (
+              <KeyBarKey
+                key={id}
+                label={t("keybar.label.function", { number: functionNumber(id) })}
+                accessibilityLabel={t("keybar.a11y.function", { number: functionNumber(id) })}
+                onPress={press(id)}
+                testID={`${testID}-${id}`}
+              />
+            ))}
+          </>
+        ) : (
+          <>
+            {KEY_BAR_NAVIGATION.map((id) => (
+              <KeyBarKey
+                key={id}
+                label={t(NAVIGATION[id].label)}
+                accessibilityLabel={t(NAVIGATION[id].a11y)}
+                onPress={press(id)}
+                testID={`${testID}-${id}`}
+              />
+            ))}
+            <Separator />
+            {KEY_BAR_SYMBOLS.map((symbol) => (
+              <KeyBarKey
+                key={symbol.id}
+                label={symbol.text}
+                accessibilityLabel={t(`keybar.a11y.symbol_${symbol.id}`)}
+                onPress={type(symbol.text)}
+                testID={`${testID}-symbol-${symbol.id}`}
+              />
+            ))}
+          </>
+        )}
+      </ScrollView>
+      {moreToTheRight ? <Fade testID={`${testID}-fade`} /> : null}
+    </View>
+  );
+
+  const frame = {
+    backgroundColor: colors.bgBar,
+    borderTopWidth: size.borderWidth,
+    borderTopColor: colors.borderRow,
+  } as const;
+
+  if (landscape) {
+    // One row: the fixed keys, then the scrolling ones.
+    return (
+      <View
+        accessibilityRole="toolbar"
+        accessibilityLabel={t("keybar.group")}
+        testID={testID}
+        style={{ ...row, height: size.keybarHeightLandscape, paddingLeft: spacing.keyMargin, ...frame }}
+      >
+        {KEY_BAR_FIXED.map((id) => fixedKey(id, false))}
+        <Separator />
+        {scrolling}
+      </View>
+    );
+  }
+
   return (
     <View
       accessibilityRole="toolbar"
       accessibilityLabel={t("keybar.group")}
       testID={testID}
-      style={{
-        ...row,
-        height: size.keybarHeight,
-        paddingLeft: spacing.keyMargin,
-        backgroundColor: colors.bgBar,
-        borderTopWidth: size.borderWidth,
-        borderTopColor: colors.borderRow,
-      }}
+      style={{ height: size.keybarHeight, justifyContent: "center", rowGap: size.keybarRowGap, ...frame }}
     >
-      <KeyBarKey
-        label={t("keybar.label.esc")}
-        accessibilityLabel={t("keybar.a11y.esc")}
-        onPress={press("esc")}
-        testID={`${testID}-esc`}
-      />
-      <KeyBarKey
-        label={t("keybar.label.tab")}
-        accessibilityLabel={t("keybar.a11y.tab")}
-        onPress={press("tab")}
-        testID={`${testID}-tab`}
-      />
-      <KeyBarKey
-        label={t("keybar.label.shift")}
-        accessibilityLabel={modifierLabel("shift")}
-        modifierState={modifiers.shift}
-        onPress={pressModifier("shift")}
-        testID={`${testID}-shift`}
-      />
-      <KeyBarKey
-        label={t("keybar.label.ctrl")}
-        accessibilityLabel={modifierLabel("ctrl")}
-        modifierState={modifiers.ctrl}
-        onPress={pressModifier("ctrl")}
-        testID={`${testID}-ctrl`}
-      />
-      <KeyBarKey
-        label={t("keybar.label.alt")}
-        accessibilityLabel={modifierLabel("alt")}
-        modifierState={modifiers.alt}
-        onPress={pressModifier("alt")}
-        testID={`${testID}-alt`}
-      />
-      <Separator />
-      <View
-        style={{ flex: 1, alignSelf: "stretch", justifyContent: "center" }}
-        onLayout={onViewportLayout}
-        testID={`${testID}-viewport`}
-      >
-        <ScrollView
-          ref={scrollRef}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyboardShouldPersistTaps="always"
-          onScrollEndDrag={onScroll}
-          onMomentumScrollEnd={onScroll}
-          onContentSizeChange={onContentSize}
-          contentContainerStyle={{ ...row, paddingRight: spacing.keyMargin }}
-          testID={`${testID}-scroll`}
-        >
-          {ARROWS.map((arrow) => (
-            <RepeatKey
-              key={arrow.id}
-              icon={arrow.icon}
-              accessibilityLabel={t(arrow.a11y)}
-              onFire={fireArrow(arrow.id)}
-              testID={`${testID}-${arrow.id}`}
-            />
-          ))}
-          <Separator />
-          <View style={row} onLayout={onSwapLayout}>
-            {fnOpen ? (
-              <>
-                <KeyBarKey
-                  icon="x"
-                  accessibilityLabel={t("keybar.a11y.close_fn")}
-                  onPress={toggleFn(false)}
-                  testID={`${testID}-close-fn`}
-                />
-                {FUNCTION_KEYS.map((id) => (
-                  <KeyBarKey
-                    key={id}
-                    label={t("keybar.label.function", { number: functionNumber(id) })}
-                    accessibilityLabel={t("keybar.a11y.function", { number: functionNumber(id) })}
-                    onPress={press(id)}
-                    testID={`${testID}-${id}`}
-                  />
-                ))}
-              </>
-            ) : (
-              <>
-                {NAVIGATION.map((key) => (
-                  <KeyBarKey
-                    key={key.id}
-                    label={t(key.label)}
-                    accessibilityLabel={t(key.a11y)}
-                    onPress={press(key.id)}
-                    testID={`${testID}-${key.id}`}
-                  />
-                ))}
-                <KeyBarKey
-                  label={t("keybar.label.fn")}
-                  accessibilityLabel={t("keybar.a11y.fn")}
-                  onPress={toggleFn(true)}
-                  testID={`${testID}-fn`}
-                />
-                <KeyBarKey
-                  icon="clipboard-paste"
-                  accessibilityLabel={t("common.paste")}
-                  onPress={paste}
-                  testID={`${testID}-paste`}
-                />
-              </>
-            )}
-          </View>
-        </ScrollView>
-        {moreToTheRight ? <Fade testID={`${testID}-fade`} /> : null}
+      <View style={{ ...row, paddingHorizontal: spacing.keyMargin }} testID={`${testID}-row-fixed`}>
+        {KEY_BAR_FIXED.map((id) => fixedKey(id, true))}
+      </View>
+      <View style={{ ...row, paddingLeft: spacing.keyMargin }} testID={`${testID}-row-scroll`}>
+        {scrolling}
       </View>
     </View>
   );

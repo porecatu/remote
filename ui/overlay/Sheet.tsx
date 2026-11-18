@@ -238,6 +238,8 @@ export type SheetItemProps = {
   readonly note?: string;
   /** Its action awaits the result: dimmed, a spinner, no touch (RF-4.9). */
   readonly pending?: boolean;
+  /** A toggle item: its state, shown as a check mark at the right and announced as checked or not. */
+  readonly checked?: boolean;
   readonly testID?: string;
 };
 
@@ -250,20 +252,26 @@ export function SheetItem({
   disabled = false,
   note,
   pending = false,
+  checked,
   testID,
 }: SheetItemProps) {
   const { colors } = useTheme();
   const { t } = useT();
   const inactive = disabled || pending;
+  const toggle = checked !== undefined;
   const tone: ColorToken = disabled ? "textDisabled" : destructive ? "destructive" : "textBody";
   const a11yLabel = pending ? `${label}${t("a11y.separator")}${t("a11y.pending")}` : label;
   return (
     <Pressable
       onPress={onPress}
       disabled={inactive}
-      accessibilityRole="button"
+      accessibilityRole={toggle ? "checkbox" : "button"}
       accessibilityLabel={a11yLabel}
-      accessibilityState={{ disabled: inactive, ...(pending ? { busy: true } : {}) }}
+      accessibilityState={{
+        disabled: inactive,
+        ...(pending ? { busy: true } : {}),
+        ...(toggle ? { checked } : {}),
+      }}
       {...(destructive ? { accessibilityHint: t("a11y.destructive") } : {})}
       {...(testID === undefined ? {} : { testID })}
       style={({ pressed }): StyleProp<ViewStyle> => [
@@ -282,6 +290,9 @@ export function SheetItem({
         )}
       </View>
       {pending ? <Spinner {...(testID === undefined ? {} : { testID: `${testID}-spinner` })} /> : null}
+      {checked === true ? (
+        <Icon name="check" role="item" color={tone} {...(testID === undefined ? {} : { testID: `${testID}-check` })} />
+      ) : null}
     </Pressable>
   );
 }

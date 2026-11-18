@@ -124,7 +124,7 @@ Papel fora da escala usa o mais próximo dela: item de folha é corpo (15/400), 
 | `radius.card` (linha, cartão, diálogo central) | 8 | janela, popover, cápsula de grupo (8) |
 | `radius.control` (botão, campo, tecla, item de menu) | 6 | aba, botões da barra (6); campo 5 do desktop sobe a 6 por consistência com o botão, **proposta** |
 | `radius.chip` (badge, chip, contador) | 4 | botão de fechar da aba (4); badge do desktop 3 |
-| `radius.round` (ponto, trilho do interruptor, rádio, alça, barra de rolagem, botão flutuante, chip de zoom) | 50% | ponto de status (50%) |
+| `radius.round` (ponto, trilho do interruptor, rádio, alça, barra de rolagem, chip de zoom) | 50% | ponto de status (50%) |
 
 ### 2.5 Dimensões próprias do mobile (todas propostas)
 
@@ -140,18 +140,17 @@ O desktop não tem equivalente: a precisão de um dedo exige alvos maiores que o
 | `button.height` | 48 | o botão do desktop tem 30 |
 | `field.height` | 48 | o campo do desktop tem 30 |
 | `bar.height` | 56 (barra de tela), 48 (barra do terminal), 40 (terminal em paisagem, §4.6) | |
-| `keybar.height` | 52 (teclas de 44, margem de 4) | |
+| `keybar.height` | 100 (duas linhas de teclas de 44, vão de 4 entre elas, margens de cerca de 4); **52** em paisagem, com uma linha só | |
 | `gutter` | 16 | margem lateral das telas, mais a área segura do aparelho |
 | `space.scale` | 4, 8, 12, 16, 24, 32 | o desktop usa 3, 6, 8, 10, 12, 18, 24; escala de 4 pt do mobile |
 | `badge.height` | 20 | |
 | `swatch` | 40 desenho, alvo 48 | amostra de cor do grupo (o desktop tem 28) |
-| `fab` | 44 | botões flutuantes da grade (§4.7) |
 | `dialog.width` | até 360 e margem de 24 de cada lado | o diálogo do desktop tem piso 360 e teto 720; no celular a largura é a da tela |
 | `terminal.min-font` | 8 pt (de [RF-3.7](../prd/prd-003-terminal.md)) | limiar de "caber a largura" |
 | `terminal.read-font` | 12 pt; máximo 24 pt | tamanho de leitura quando a largura não cabe (proposta; o PRD não fixa o valor) |
 | `terminal.line-height` | 1,3 da fonte | **proposta:** o desktop usa 1,75; no celular, mais linhas visíveis |
 | `border.width` | 1 | borda de cartão, de barra (a inferior, `border.row`), de folha (só a de cima) e de diálogo; divisor |
-| `border.emphasis` | 2 | borda de destaque: tecla armada, flutuante ligado, painel focado na miniatura, anel da amostra escolhida, aro do rádio |
+| `border.emphasis` | 2 | borda de destaque: tecla armada, `Fn` aberto, painel focado na miniatura, anel da amostra escolhida, aro do rádio |
 | `focus.width` / `focus.offset` | 2 / 2 | contorno de foco (`accent`) afastado do controle, como o Cancelar do §4.13 |
 | `group.stripe` | 4 | faixa de cor do grupo (§4.5.2) |
 | `indicator.slot` | 24 | espaço do indicador à esquerda da linha de aba (§4.5.2) |
@@ -222,10 +221,10 @@ Todos saem do `space.scale` (4, 8, 12, 16, 24, 32). Onde um valor intermediário
 | `banner.padding-x` / `banner.gap` | 16 / 8 | faixas de conexão e de aviso |
 | `snackbar.margin` | 16 | do fim da tela e acima da barra de teclas (§4.14) |
 | `snackbar.padding` | 12 | dentro do aviso temporário |
-| `key.margin` / `key.gap` | 4 / 6 | barra de teclas (§4.8) |
+| `key.margin` / `key.gap` | 4 / 6 | barra de teclas e teclado de setas (§4.8) |
+| `key.row-gap` | 4 | entre as duas linhas da barra de teclas (§4.8) |
+| `key.padding-x.grow` | 0 | margem lateral das teclas da linha 1, que dividem a largura (§4.8) |
 | `key.padding-x` | 8 | rótulo dentro da tecla (10 → 8) |
-| `fab.gap` | 8 | entre os flutuantes empilhados (§4.7) |
-| `fab.inset` | 16 | dos flutuantes à borda direita e ao fundo da grade (12 e 20 → 16) |
 | `zoom-chip.padding-x` / `zoom-chip.top` | 12 / 12 | chip de zoom, centrado no topo da grade |
 | `scrollbar.inset` | 4 | da barra de rolagem à borda da grade (3 e 6 → 4) |
 | `thumbnail.padding` | 4 | título e ponto dentro de cada painel da miniatura |
@@ -241,8 +240,7 @@ Lucide, tamanho fixo (não acompanha o ajuste de fonte, [ADR-0008](../adr/0008-i
 | `icon.item` | 22 | 2 | item de folha; botão `ellipsis-vertical` da linha e do cabeçalho de grupo |
 | `icon.chevron` | 20 | 2 | chevrons de janela, de grupo e de linha que navega |
 | `icon.inline` | 20 | 2 | ícone junto do texto de botão ("Nova aba"), `check` de escolha e da amostra, `x` do aviso |
-| `icon.fab` | 20 | 2 | botões flutuantes da grade |
-| `icon.key` | 18 | 2 | setas e `clipboard-paste` da barra de teclas |
+| `icon.key` | 18 | 2 | setas (teclado de setas), `x` e `clipboard-paste` da barra de teclas |
 | `icon.indicator` | 16 | 2 | `bell`, `pin`, ícone das faixas |
 | `icon.spinner` | 16 | 2 | spinner, **um tamanho só** (§4.2, §4.7): `loader-circle` em `accent`, uma volta por segundo, linear |
 | `icon.chip` | 14 | 2 | ícone dentro de chip; `monitor` de "ativa no desktop" |
@@ -258,7 +256,6 @@ Iguais nos dois modos, em preto.
 |---|---|---|---|
 | `shadow.sheet` | −8 | 24 | .30 |
 | `shadow.dialog` | 16 | 40 | .45 |
-| `shadow.fab` | 4 | 12 | .35 |
 
 ### 2.9 Opacidades e durações
 
@@ -266,7 +263,6 @@ Iguais nos dois modos, em preto.
 |---|---|---|
 | `opacity.pending` | .60 | linha com ação pendente (§4.5.2) |
 | `opacity.read-only` | .60 | árvore durante a reconexão (§4.5.4); grade esmaecida em `reconnecting` (§4.10) |
-| `opacity.fab` | .90 | fundo `bg.bar` dos flutuantes (§4.7) |
 | `opacity.zoom-chip` | .92 | fundo `bg.sheet` do chip de zoom, com borda `border.sheet` **(proposta)** |
 | `opacity.group-tint` | .14 | tingimento da cor do grupo (§2.2) |
 | `duration.sheet` | 200 ms | folha sobe e desce (§1, princípio 9) |
@@ -736,11 +732,13 @@ Todas voltam à lista ao fechar, com o desktop já marcado.
 +-----------------------------+
 | ~/projetos $ make           |
 | cc -o ...                   |   grade (Skia): theme do desktop
-| ...                         |
-|                      (fim)  |   botoes flutuantes (44)
-|                     (cursor)|
+| ...                    +---+|
+|                        | ^ ||   teclado de setas (colado na barra de teclas)
+|                    +---+---+|
+|                    |<  v  >||
 +-----------------------------+
-| Esc Tab Shift Ctrl Alt | v ^ > |   barra de teclas (52)
+| Esc Tab Shift Ctrl Alt Fn Colar |   barra de teclas (100, duas linhas)
+| Home End PgUp PgDn | | ~ / \ >> |
 +-----------------------------+
 |     teclado do sistema      |
 +-----------------------------+
@@ -752,7 +750,7 @@ Todas voltam à lista ao fechar, com o desktop já marcado.
 - À direita: seletor de painéis (só com mais de um, chip "2/3", §4.9), `keyboard` (mostra ou esconde o teclado) e `ellipsis-vertical` (menu da aba, RF-4.6).
 - **Campainha:** ícone `bell` pisca por 2 s na barra (vermelho `error`) no painel visível. Junto, a vibração curta quando ligada nas configurações (RF-3.23). Proposta: o aviso visual existe sempre, para quem desligou a vibração ou não sente.
 
-**Grade.** Fundo `bg.terminal`, preenchendo o espaço entre a barra e a barra de teclas. Margem de 0 nas laterais (cada ponto conta); a grade respeita a área segura (*notch*, cantos). O texto sai do `theme` do desktop. A tela de terminal é **imersiva em paisagem**: a barra sobe para 40 e a barra de teclas vira uma linha única.
+**Grade.** Fundo `bg.terminal`, preenchendo o espaço entre a barra e a barra de teclas. Margem de 0 nas laterais (cada ponto conta); a grade respeita a área segura (*notch*, cantos). O texto sai do `theme` do desktop. A tela de terminal é **imersiva em paisagem**: a barra sobe para 40 e a barra de teclas vira uma linha única (52), com o teclado de setas em fileira de quatro (§4.8).
 
 **Privacidade.** `FLAG_SECURE` no Android; cobertura no seletor de apps no iOS (§4.1). Nenhum texto da grade em log.
 
@@ -772,15 +770,15 @@ Todas voltam à lista ao fechar, com o desktop já marcado.
 | Arrasto vertical na tela alternativa | rola a grade se ela é mais alta que a tela; senão não faz nada (RF-3.13) |
 | Toque longo | sem efeito na v1 (seleção e cópia estão fora do escopo) |
 
-**Duplo toque não existe**: atrasaria o toque simples que abre o teclado. Os atalhos de zoom são botões:
+**Duplo toque não existe**: atrasaria o toque simples que abre o teclado. Os atalhos de zoom e de posição são **itens do menu da aba** (`ellipsis-vertical`, §4.12.1), no topo, antes de "Renomear". Não há mais botões flutuantes sobre a grade (decisão do dono em 2026-11-18: a grade fica livre, e as setas ganham o canto, §4.8):
 
-**Botões flutuantes** (`fab` 44, `bg.bar` a 90%, borda `border.row`; empilhados no canto inferior direito da grade, acima da barra de teclas, 8 de distância):
-
-| Botão | Aparece quando | Efeito |
+| Item do menu | Disponível quando | Efeito |
 |---|---|---|
-| `arrow-down-to-line` "Voltar ao fim" (RF-3.12) | o usuário está fora do fundo | rola ao fim da grade viva |
-| `locate-fixed` "Seguir o cursor" (RF-3.8) | a grade é mais larga que a tela | enquadra a coluna do cursor e passa a segui-lo enquanto o usuário digita; ligado fica em `bg.selected` com borda `accent` |
 | `scan` "Caber a largura" | o zoom não é o de caber | volta ao padrão |
+| `locate-fixed` "Seguir o cursor" (RF-3.8) | a grade é mais larga que a tela | enquadra a coluna do cursor e passa a segui-lo enquanto o usuário digita; é um item de marcar (ícone `check` à direita quando ligado) |
+| `arrow-down-to-line` "Voltar ao fim" (RF-3.12) | o usuário está fora do fundo | rola ao fim da grade viva |
+
+Os três ficam sempre no menu e **esmaecem** quando não se aplicam (regra do §4.12.1), e "Seguir o cursor" diz o motivo ("A grade já cabe na tela"). O menu mostra o estado da grade **no momento em que abre**; cada item fecha a folha e age.
 
 **Histórico (RF-3.11, RF-3.12).** Páginas de scrollback pedidas conforme o usuário avança; enquanto lê o histórico, a grade viva continua a atualizar embaixo, e o texto lido **não anda** quando `history` cresce. Entre a grade viva e o histórico não há separador (o desktop também não tem): o texto é contínuo. Carregando uma página, uma linha fina de spinner (16) no topo do histórico; sem mais histórico, nada.
 
@@ -788,28 +786,35 @@ Todas voltam à lista ao fechar, com o desktop já marcado.
 
 **Zoom por aba (RF-3.9).** Lembrado na sessão do app; não persiste.
 
-**Acessibilidade da grade.** O canvas do Skia não expõe texto ([ADR-0002](../adr/0002-render-da-grade-com-skia.md), dívida registrada). Proposta mínima, a validar no spike: um elemento único de acessibilidade sobre a grade com rótulo "Terminal, <título>" e **valor** "últimas N linhas" (resumo textual das 5 a 10 últimas linhas não vazias, atualizado no máximo a cada 2 s e **só quando o leitor de tela está ligado**, e nunca a um log). Fica **dívida de acessibilidade** assumida, como no desktop, até o ADR-0002 definir a camada paralela. Os botões flutuantes e a barra de teclas são plenamente acessíveis.
+**Acessibilidade da grade.** O canvas do Skia não expõe texto ([ADR-0002](../adr/0002-render-da-grade-com-skia.md), dívida registrada). Proposta mínima, a validar no spike: um elemento único de acessibilidade sobre a grade com rótulo "Terminal, <título>" e **valor** "últimas N linhas" (resumo textual das 5 a 10 últimas linhas não vazias, atualizado no máximo a cada 2 s e **só quando o leitor de tela está ligado**, e nunca a um log). Fica **dívida de acessibilidade** assumida, como no desktop, até o ADR-0002 definir a camada paralela. O teclado de setas, a barra de teclas e o menu da aba são plenamente acessíveis.
 
 ### 4.8 Terminal: barra de teclas especiais
 
 **Objetivo.** O que o teclado virtual não tem: `Esc`, `Tab`, `Shift`, `Ctrl`, `Alt`, setas, navegação, `F1`–`F12`. RF-3.15, RF-3.16, RF-3.19.
 
-**Onde.** Fixa **acima do teclado do sistema** (acompanha o teclado), só enquanto o teclado está aberto. Altura 52, `bg.bar`, borda superior `border.row`. Teclas de 44 × 44 (`target.min`: aqui 44 e não 48, por falta de altura; é o piso de iOS), margem 4, vão de 6, raio 6, rótulo mono 13/500 `text.body`, fundo `bg.key`, pressionada `bg.key.pressed`.
+**Onde.** Fixa **acima do teclado do sistema** (acompanha o teclado), só enquanto o teclado está aberto. **Duas linhas**, altura **100**, `bg.bar`, borda superior `border.row`. Teclas de 44 de altura (`target.min`: aqui 44 e não 48, por falta de altura; é o piso de iOS), margem 4, vão de 6 entre teclas e de 4 entre as linhas, raio 6, rótulo mono 13/500 `text.body`, fundo `bg.key`, pressionada `bg.key.pressed`.
 
 ```
-+-----------------------------------------------+
-| Esc  Tab  Shift  Ctrl  Alt | < v ^ > | Home End PgUp...|  rolavel
-+-----------------------------------------------+
+                                  +----+
+                                  | ^  |     teclado de setas
+                             +----+----+----+
+                             | <  | v  | >  |
++-----+-----+-------+------+-----+----+------+
+| Esc | Tab | Shift | Ctrl | Alt | Fn | Colar|  linha 1: fixa
+| Home End PgUp PgDn | | ~ / \ - _ ` >>        |  linha 2: rola
++---------------------------------------------+
 ```
 
-**Arranjo (proposta).** Uma linha só, em três grupos:
-1. **Fixos à esquerda:** `Esc`, `Tab`, `Shift`, `Ctrl`, `Alt` (os mais usados, sempre visíveis; `Shift` entre `Tab` e `Ctrl`, por pedido do dono em 2026-11-18). Em tela estreita sobra menos largura para as setas, que rolam.
-2. **Setas:** `←` `↓` `↑` `→` (ícones `arrow-left`, `arrow-down`, `arrow-up`, `arrow-right`), com **repetição** ao manter pressionada (primeira repetição em 400 ms, depois a cada 80 ms).
-3. **Rolável à direita:** `Home`, `End`, `PgUp`, `PgDn`, `Fn` e `Colar` (ícone `clipboard-paste`). Um degradê na borda direita indica que há mais.
+**Arranjo (decisão do dono, 2026-11-18).** Duas linhas, com as setas fora da barra:
+1. **Linha 1, fixa:** `Esc`, `Tab`, `Shift`, `Ctrl`, `Alt`, `Fn` e `Colar` (ícone `clipboard-paste`), **todas dividindo a largura por igual** (sem rolagem): cerca de 45 de largura em 360 e 39 em 320. Elas não levam margem lateral própria (`key.padding-x` de 0), para "Shift" caber em 320. `Shift` entre `Tab` e `Ctrl`, por pedido do dono em 2026-11-18.
+2. **Linha 2, rolável:** `Home`, `End`, `PgUp`, `PgDn`, um separador e os **símbolos** que o teclado do celular esconde, em teclas de 44: `|` `~` `/` `\` `-` `_` `` ` ``. Os símbolos vão como **texto** (como se digitados no teclado do sistema), e por isso um `Ctrl` armado os transforma em `key` com o bit (`Ctrl` + `\` é o SIGQUIT). Um degradê na borda direita indica que há mais.
+3. **Teclado de setas**, à parte (abaixo).
 
-A alternativa (duas linhas, tudo à vista) custa 52 de altura a mais num aparelho que já perde metade da tela para o teclado; vai ao dono (§7, item 4).
+**Teclado de setas.** `←` `↓` `↑` `→` (ícones `arrow-left`, `arrow-down`, `arrow-up`, `arrow-right`) num **T invertido**: `↑` sozinha em cima, centrada sobre a `↓`, e `←` `↓` `→` embaixo, como num teclado de PC. É um painel **opaco** (`bg.bar`, sem sombra e sem transparência), com borda `border.row` em cima e à esquerda e o canto superior esquerdo arredondado (6), teclas de 44, margem de 4 e vão de 6 (152 de largura por cerca de 102 de altura). Fica no **canto inferior direito, colado ao topo da barra de teclas**, para parecer uma extensão dela, e aparece e some junto com a barra. Cobre uma parte da grade, que não rola por baixo dele. Cada seta tem **repetição** ao manter pressionada (primeira repetição em 400 ms, depois a cada 80 ms) e leva os modificadores armados, como as teclas da barra.
 
-**`Fn`.** Troca a linha rolável por `F1`…`F12`, com uma tecla `x` ("Fechar F") de volta à normal.
+**Paisagem.** Com o teclado do sistema aberto, duas linhas comeriam a altura toda. A barra vira **uma linha só** (altura 52): as sete teclas da linha 1 em largura fixa de 44, um separador e a área rolável da linha 2 ao lado. O teclado de setas vira **uma fileira de quatro** (`←` `↓` `↑` `→`).
+
+**`Fn`.** Troca a **linha 2** por `F1`…`F12` (rolável), com uma tecla `x` ("Fechar F") à esquerda de volta à normal; a linha 1 não muda. Enquanto está aberto, `Fn` aparece "ligado" (fundo `bg.selected` e borda 2 `accent`, sem o sublinhado dos modificadores, que o separa do armado) e é anunciado como expandido. Tocar `Fn` de novo também fecha.
 
 **Modificadores com trava (RF-3.16).** `Shift`, `Ctrl` e `Alt` têm três estados, **sempre distinguíveis sem a cor**:
 
@@ -819,11 +824,11 @@ A alternativa (duas linhas, tudo à vista) custa 52 de altura a mais num aparelh
 | Armado (um toque; vale para a próxima tecla e solta) | fundo `bg.selected`, borda 2 `accent`, e a barra inferior do rótulo sublinhada |
 | Travado (dois toques; até o terceiro) | o mesmo mais o ícone `lock` (10) no canto da tecla |
 
-O modificador **vale para**: o próximo texto do teclado do sistema (`Ctrl` + "c" vai como `key { "c", Ctrl }`, nunca como `text`), e para as teclas da barra (setas, `Home`, `Tab`…), enviadas como `key` com os `mods`. `Shift` + letra do teclado do sistema vai como `key` com a letra já em maiúscula e o bit `Shift` (o desktop não muda a caixa por `Shift`); `Shift` + `Tab` e `Shift` + seta vão como `key` com o bit. `Esc` e `Fn` não consomem o armado. O estado vale **por tela do terminal** e zera ao sair dela.
+O modificador **vale para**: o próximo texto do teclado do sistema e dos símbolos da barra (`Ctrl` + "c" vai como `key { "c", Ctrl }`, nunca como `text`), e para as teclas da barra e as setas (`Home`, `Tab`…), enviadas como `key` com os `mods`. `Shift` + letra do teclado do sistema vai como `key` com a letra já em maiúscula e o bit `Shift` (o desktop não muda a caixa por `Shift`); `Shift` + `Tab` e `Shift` + seta vão como `key` com o bit. `Esc` e `Fn` não consomem o armado. O estado vale **por tela do terminal** e zera ao sair dela.
 
 **Vibração.** Cada toque em tecla da barra dá um tique leve (*haptic*) se o aparelho suporta e a vibração das configurações está ligada. (Proposta: a mesma chave da campainha.)
 
-**Acessibilidade.** Cada tecla é um botão com rótulo ("Escape", "Tab", "Controle, solto", "Controle, travado", "Seta para cima"). Os estados armado e travado são anunciados. A barra tem um `accessibilityLabel` de grupo "Teclas especiais".
+**Acessibilidade.** Cada tecla é um botão com rótulo ("Escape", "Tab", "Controle, solto", "Controle, travado", "Seta para cima", "Barra vertical", "Barra invertida"). Os estados armado e travado são anunciados. A barra tem um `accessibilityLabel` de grupo "Teclas especiais", e o teclado de setas, "Setas".
 
 ### 4.9 Terminal: seletor de painéis
 
@@ -899,6 +904,10 @@ Aberto pelo toque longo ou pelo `ellipsis-vertical` na árvore, e pelo botão na
 
 | Item | Ícone | Observação |
 |---|---|---|
+| Caber a largura | `scan` | **só no menu aberto do terminal** (§4.7); esmaecido quando o zoom já é o de caber |
+| Seguir o cursor | `locate-fixed` | só no terminal; item de marcar (`check` à direita quando ligado); esmaecido, com a nota "A grade já cabe na tela", se a grade não é mais larga que a tela |
+| Voltar ao fim | `arrow-down-to-line` | só no terminal; esmaecido quando já está no fim |
+| *divisor* | | só no terminal, depois dos três itens de vista |
 | Renomear | `pencil` | abre §4.12.3 |
 | Mover para grupo… | `folder-input` | abre §4.12.4; escondido na aba fixada |
 | Mover para janela… | `app-window` | abre §4.12.5; **esmaecido** (nunca ausente) com uma só janela, com a nota "Só há uma janela no desktop" |
@@ -907,7 +916,7 @@ Aberto pelo toque longo ou pelo `ellipsis-vertical` na árvore, e pelo botão na
 | Fechar painel | `panel-top-close` | só se a aba tem mais de um painel e só no menu aberto do terminal, aplicando ao painel visto |
 | Fechar aba | `x` | destrutivo (`destructive`); abre o diálogo de §4.13 se o desktop pedir |
 
-**Aba fixada:** só **Renomear** e **Fechar aba** (RF-4.6). Fechar uma fixada a **desafixa** no computador, e o app **não** pergunta antes: pela especificação 0.4, o desktop sempre pede a confirmação para fechar uma fixada (`confirm-request`), e o diálogo de §4.13 traz a nota da desafixação. *Revisto em 2026-11-17 (§7, item 6): saiu o diálogo próprio que a proposta previa.*
+**Aba fixada:** só **Renomear** e **Fechar aba** (RF-4.6), mais os itens de vista no terminal. Fechar uma fixada a **desafixa** no computador, e o app **não** pergunta antes: pela especificação 0.4, o desktop sempre pede a confirmação para fechar uma fixada (`confirm-request`), e o diálogo de §4.13 traz a nota da desafixação. *Revisto em 2026-11-17 (§7, item 6): saiu o diálogo próprio que a proposta previa.*
 
 **Ordem.** Difere do desktop (Nova aba, Fechar, Mover para grupo, Mover para janela), **proposta**: no celular, o destrutivo fica no fundo da folha, ao alcance do polegar mas longe do primeiro toque. A "Nova aba" do menu do desktop não entra: no celular ela mora nas linhas "Nova aba" da árvore (§4.5.2). A ordem final cabe ao dono.
 
@@ -1062,8 +1071,10 @@ Os oito pontos que a proposta levou ao dono, em ordem de impacto, cada um com a 
 
 1. **Árvore em uma rolagem só** (janelas como seções recolhíveis, grupos como cartões com faixa de cor), ou uma janela por vez com seletor de chips. É a tela mais usada e define a forma do app (§4.5.2).
 2. **Terminal sem duplo toque, com botões flutuantes** de voltar ao fim, seguir o cursor e caber a largura, em vez de gestos escondidos (§4.7).
+   *Revisto em 2026-11-18 pelo dono: os botões flutuantes saíram, e as três opções passaram a itens do menu da aba, para a grade ficar livre; o canto inferior direito é do teclado de setas (§4.7, §4.8, §4.12.1).*
 3. **Cor de grupo apenas como faixa e tingimento, nunca texto**, e a campainha como ícone (o desktop usa só o ponto) por acessibilidade (§2.2, §4.5.2).
 4. **Barra de teclas em uma linha** (fixos à esquerda, resto rolável, `Fn` troca para F1 a F12), contra duas linhas sempre à vista; e teclas de 44 em vez de 48 (§4.8).
+   *Revisto em 2026-11-18 pelo dono: duas linhas. A linha 1 é fixa (`Esc`, `Tab`, `Shift`, `Ctrl`, `Alt`, `Fn`, `Colar`), a linha 2 rola (`Home`, `End`, `PgUp`, `PgDn` e símbolos) e `Fn` a troca por `F1`–`F12`; as setas viraram um teclado à parte, em T invertido, opaco, colado ao topo da barra, no canto inferior direito. Teclas de 44, barra de 100 (§4.8). Em paisagem, uma linha só.*
 5. **Paleta clara do chrome com tons de texto mais escuros que os do desktop** (`#8c8fa1` e `#df8e1d` reprovam em contraste no celular) e rótulo de seção mais legível que o `#5c646f` do desktop (§2.2).
 6. **Fechar aba fixada** pede, no app, a confirmação de que ela será desafixada, comportamento do desktop que a spec do protocolo não descreve; e a ordem do menu da aba, com o destrutivo no fim, diferente da do desktop (§4.12.1).
    *Revisto em 2026-11-17 pelo dono, com a especificação 0.4 do protocolo ([ADR-0010 do protocolo](https://github.com/porecatu/protocol/blob/main/docs/adr/0010-aba-ativa-pelo-cliente.md), item 5): a spec passou a dizer que fechar uma fixada sempre pede `confirm-request` e a desafixa. O diálogo próprio do app saiu, porque repetiria a confirmação do desktop; a nota de desafixar entrou no diálogo de §4.13. A ordem do menu continua a aprovada.*
@@ -1087,6 +1098,7 @@ As telas foram implementadas entre 2026-11-16 e 2026-11-17, cobertas por testes 
 
 - A anatomia inteira, aprovada em 2026-11-16 com as oito recomendações do §7.
 - As revisões de 2026-11-17 pela especificação 0.4 do protocolo ([ADR-0010 do protocolo](https://github.com/porecatu/protocol/blob/main/docs/adr/0010-aba-ativa-pelo-cliente.md)): abrir a aba no terminal a ativa no desktop (§4.6), as ações ativam como o gesto local (§4.12.2, §4.12.5, §4.12.8), o painel focado nunca muda (§4.9); e o fim do diálogo próprio de fechar fixada, com a nota no diálogo do desktop (§4.12.1, §4.13, §7 item 6).
+- As revisões do dono de 2026-11-18 para o terminal: a barra de teclas em duas linhas, com as setas num teclado à parte e as opções de vista no menu da aba, sem botões flutuantes (§4.7, §4.8, §4.12.1, §7 itens 2 e 4).
 - As decisões do dono de 2026-11-16 para a implementação: grade com Skia como o [ADR-0002](../adr/0002-render-da-grade-com-skia.md) propõe (ainda Proposto); a anatomia vence onde contradiz outra fonte; valores fora das escalas são levados a §2.3 e ao `space.scale`; mono que pediria 600 usa 500; e, até o app ter ícone (marco M5), a tela de bloqueio e a cobertura mostram só o fundo `bg.base` (a de bloqueio, com o nome e "Bloqueado").
 
 ### 9.2 À espera do aval
@@ -1098,6 +1110,10 @@ Uma linha por item: o que a anatomia diz (ou não fixa) e o que o código faz.
 | Item | Anatomia | Código |
 |---|---|---|
 | Barra de rolagem no modo claro | não existia | `scrollbar.thumb` e `scrollbar.track` no tom do `text.title` (§2.1) |
+| Barra de teclas em paisagem | "uma linha única" (§4.6), sem medidas | uma linha de 52: as sete teclas da linha 1 em 44 de largura, o separador e a linha 2 rolável; o teclado de setas vira uma fileira de quatro |
+| `Fn` aberto | `x` de volta, sem estado em `Fn` | `Fn` aparece ligado (`bg.selected`, borda 2 `accent`, sem sublinhado) e fecha também ao ser tocado de novo; o `x` continua |
+| Margem das teclas da linha 1 | não fixada | `key.padding-x` 0 nas teclas que dividem a largura, para "Shift" caber em 320 |
+| Teclado de setas | cobre a grade | painel de 152 × ~102, que não desloca nem redimensiona a grade |
 | Cantos da moldura da câmera | "cantos marcados" | `camera.corner` 24 × 4 (§2.5) |
 | Paddings de campo, formulário, cartão e aviso | não fixava | `field.padding-x` 12, `form.gap` 8, `card.padding` 16, `snackbar.padding` 12 (§2.6) |
 | Entrelinhas | não fixava | 1,25 nos papéis de uma linha e 1,45 no corpo (§2.3) |

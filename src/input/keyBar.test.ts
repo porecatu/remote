@@ -3,9 +3,13 @@
 import { NAMED_KEYS, NamedKey } from "@/protocol";
 
 import {
+  ARROW_PAD_LAYOUT,
   FUNCTION_KEYS,
+  KEY_BAR_FIXED,
   KEY_BAR_KEYS,
   KEY_BAR_LAYOUT,
+  KEY_BAR_NAVIGATION,
+  KEY_BAR_SYMBOLS,
   isKeyBarKey,
   isKeyBarModifier,
   namedKeyOf,
@@ -57,10 +61,24 @@ describe("key bar", () => {
     expect(isKeyBarKey("f1")).toBe(true);
   });
 
-  it("lays out the buttons of RF-3.15 once each", () => {
+  it("lays out the buttons of RF-3.15 once each: row 1 fixed, then the navigation keys", () => {
     expect(new Set(KEY_BAR_LAYOUT).size).toBe(KEY_BAR_LAYOUT.length);
-    for (const id of ["esc", "tab", "shift", "ctrl", "alt", "up", "down", "left", "right", "home", "end", "pgup", "pgdn", "fn"] as const) {
+    expect(KEY_BAR_FIXED).toEqual(["esc", "tab", "shift", "ctrl", "alt", "fn", "paste"]);
+    expect(KEY_BAR_NAVIGATION).toEqual(["home", "end", "pgup", "pgdn"]);
+    for (const id of ["esc", "tab", "shift", "ctrl", "alt", "fn", "paste", "home", "end", "pgup", "pgdn"] as const) {
       expect(KEY_BAR_LAYOUT).toContain(id);
     }
+  });
+
+  it("keeps the arrows out of the bar, in the arrow pad: an inverted T", () => {
+    for (const id of ["up", "down", "left", "right"] as const) {
+      expect(KEY_BAR_LAYOUT).not.toContain(id);
+    }
+    expect([ARROW_PAD_LAYOUT.top, ...ARROW_PAD_LAYOUT.bottom].sort()).toEqual(["down", "left", "right", "up"]);
+  });
+
+  it("lists the symbols once each, as single characters", () => {
+    expect(KEY_BAR_SYMBOLS.map((symbol) => symbol.text).join("")).toBe("|~/\\-_`");
+    expect(new Set(KEY_BAR_SYMBOLS.map((symbol) => symbol.id)).size).toBe(KEY_BAR_SYMBOLS.length);
   });
 });

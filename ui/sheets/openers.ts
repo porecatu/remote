@@ -18,7 +18,7 @@ import {
   openRenameGroupSheet,
   openRenameTabSheet,
 } from "./forms";
-import { openGroupMenu, openTabMenu } from "./menus";
+import { type TerminalViewOptions, openGroupMenu, openTabMenu } from "./menus";
 import { openNewTabSheet } from "./NewTabSheet";
 
 /** What every opener takes besides its target. */
@@ -30,8 +30,11 @@ export type OpenerBase = {
 
 export type TabMenuOpener = OpenerBase & {
   readonly tabId: TabId;
-  /** Opened from the terminal, which shows this pane: the menu offers Close pane for it (§4.12.1). */
-  readonly fromTerminal?: { readonly paneId: PaneId };
+  /**
+   * Opened from the terminal, which shows this pane: the menu offers Close pane
+   * for it, and, with `view`, the grid's view options first (§4.7, §4.12.1).
+   */
+  readonly fromTerminal?: { readonly paneId: PaneId; readonly view?: TerminalViewOptions };
 };
 
 export type GroupMenuOpener = OpenerBase & {

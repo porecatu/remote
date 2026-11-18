@@ -64,8 +64,12 @@ export const size = {
   terminalBarHeight: 48,
   /** `bar.height` of the terminal bar in landscape (§4.6). */
   terminalBarHeightLandscape: 40,
-  /** `keybar.height` (keys of 44, margin of 4). */
-  keybarHeight: 52,
+  /** `keybar.height`: two rows of keys of 44 (§4.8), a 4 gap and margins of about 4. */
+  keybarHeight: 100,
+  /** `keybar.height` in landscape: one row (keys of 44, margin of 4). */
+  keybarHeightLandscape: 52,
+  /** `keybar.row-gap`: between the two rows of the bar. */
+  keybarRowGap: 4,
   /** `gutter`: side margin of screens, plus the safe area. */
   gutter: 16,
   /** `badge.height`. */
@@ -74,15 +78,13 @@ export const size = {
   swatch: 40,
   /** `swatch.small`: swatch in the move-to-group list (§4.12.4). */
   swatchSmall: 16,
-  /** `fab`: floating buttons of the grid (§4.7). */
-  fab: 44,
   /** `dialog.width`: maximum width of a central dialog. */
   dialogMaxWidth: 360,
   /** `dialog.width`: margin on each side of a central dialog. */
   dialogMargin: 24,
   /** `border.width`: card, bar, sheet and dialog borders; dividers. */
   borderWidth: 1,
-  /** `border.emphasis`: armed key, fab on, focused pane, chosen swatch ring, radio ring. */
+  /** `border.emphasis`: armed key, focused pane, chosen swatch ring, radio ring. */
   borderEmphasis: 2,
   /** `focus.width`. */
   focusWidth: 2,
@@ -251,10 +253,8 @@ export const spacing = {
   keyGap: 6,
   /** `key.padding-x`. */
   keyPaddingX: 8,
-  /** `fab.gap`. */
-  fabGap: 8,
-  /** `fab.inset`: to the right edge and the bottom of the grid. */
-  fabInset: 16,
+  /** `key.padding-x` of a key that shares the row (row 1 of the bar): none (§4.8 fixes 0), so "Shift" fits at 320. */
+  keyPaddingXGrow: 0,
   /** `zoom-chip.padding-x`. */
   zoomChipPaddingX: 12,
   /** `zoom-chip.top`. */
@@ -272,7 +272,6 @@ export type IconRole =
   | "item"
   | "chevron"
   | "inline"
-  | "fab"
   | "key"
   | "indicator"
   | "spinner"
@@ -298,7 +297,6 @@ export const icon = {
   item: { size: 22, strokeWidth: stroke.standard },
   chevron: { size: 20, strokeWidth: stroke.standard },
   inline: { size: 20, strokeWidth: stroke.standard },
-  fab: { size: 20, strokeWidth: stroke.standard },
   key: { size: 18, strokeWidth: stroke.standard },
   indicator: { size: 16, strokeWidth: stroke.standard },
   spinner: { size: 16, strokeWidth: stroke.standard },
@@ -375,8 +373,6 @@ export const shadow = {
   sheet: { offsetX: 0, offsetY: -8, blurRadius: 24, color: "rgba(0, 0, 0, 0.3)" },
   /** `shadow.dialog`. */
   dialog: { offsetX: 0, offsetY: 16, blurRadius: 40, color: "rgba(0, 0, 0, 0.45)" },
-  /** `shadow.fab`. */
-  fab: { offsetX: 0, offsetY: 4, blurRadius: 12, color: "rgba(0, 0, 0, 0.35)" },
 } as const;
 
 /** §2.9 Opacities. */
@@ -385,8 +381,6 @@ export const opacity = {
   pending: 0.6,
   /** `opacity.read-only`: tree while reconnecting; grid in `reconnecting`. */
   readOnly: 0.6,
-  /** `opacity.fab`: `bgBar` behind the floating buttons. */
-  fab: 0.9,
   /** `opacity.zoom-chip`: `bgSheet` behind the zoom chip. */
   zoomChip: 0.92,
   /** `opacity.group-tint`: group color tint. */

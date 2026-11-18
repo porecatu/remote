@@ -102,7 +102,7 @@ Telas (`ui/`, importada como `@ui/`):
 | `ui/screens/terminal/` | A tela do terminal e o `useTerminalSession`, que dá ao controlador do terminal a vida do componente |
 | `ui/sheets/` | Os menus da aba e do grupo (`menus/`), as folhas de formulário (`forms/`: renomear, mover, cor, novo grupo), a folha de nova aba, `openers.ts` (abre os menus já ligados aos formulários), `model.ts` e a sessão falsa dos testes (`testing.ts`) |
 | `ui/session/` | As sobreposições da sessão (`SessionOverlays`): o diálogo de `confirm-request`, os avisos de ação (`actionMessages.ts`) e a aba criada pelo celular aberta no terminal |
-| `ui/terminal/` | As peças do terminal: barra do terminal, barra de teclas (`KeyBar`, `KeyBarKey`, `useKeyRepeat`), campo de captura (`CaptureInput`), botões flutuantes, chip de zoom, seletor e miniatura de painéis, cartão de estado do painel e o diálogo de colar |
+| `ui/terminal/` | As peças do terminal: barra do terminal, barra de teclas (`KeyBar`, `KeyBarKey`, `useKeyRepeat`), teclado de setas (`ArrowPad`), campo de captura (`CaptureInput`), chip de zoom, seletor e miniatura de painéis, cartão de estado do painel e o diálogo de colar |
 | `ui/terminal/grid/` | A grade em Skia (§4 e §6) |
 
 Rotas (`app/`, `expo-router`):
@@ -255,7 +255,8 @@ Detalhado no [ADR-0002](adr/0002-render-da-grade-com-skia.md) (Proposto). Em res
 
 ```
 teclado do sistema --(texto, IME)--------------------> text-input { pane, text }
-barra de teclas especiais --(Esc, setas, Fn...)------> key        { pane, named-key, mods }
+barra de teclas e de setas --(Esc, setas, Fn...)-----> key        { pane, named-key, mods }
+símbolos da barra (| ~ / \ - _ `) -------------------> text-input { pane, text }  (key, com modificador armado)
 Ctrl/Alt travados + letra -----------------------------> key        { pane, "c", Ctrl }
 colar ---(confirmação se houver quebra de linha)-----> paste      { pane, text }
 ```
@@ -266,7 +267,7 @@ colar ---(confirmação se houver quebra de linha)-----> paste      { pane, text
 
 > **Na implementação** (`src/input/`): `send.ts` recusa antes do fio o input para painel não assinado ou que não está `running`, texto vazio, texto com surrogate solto e texto acima de **1 MiB** em UTF-8 (`MAX_INPUT_TEXT_BYTES`, decidido pelo dono em 2026-11-16). Com um modificador armado, um único caractere digitado vira `key` com os modificadores, e não `text-input`. `paste.ts` pede confirmação sempre que o texto tem quebra de linha e prepara a prévia de 5 linhas × 120 caracteres (decidido pelo dono em 2026-11-16). `modifiers.ts` é a trava dos modificadores (`Ctrl`, `Alt`, `Shift`, `Meta`: um toque arma, dois travam, o terceiro desliga), e `keyBar.ts` mapeia os botões da barra para os `named-key` do pacote.
 
-> **Na implementação (2026-11-17), nas telas:** o controlador do terminal (`src/controllers/terminalSession.ts`) liga o `InputSender`, os modificadores e o colar ao painel na tela, e cada recusa vira um evento `input-refused` com o código, que a tela explica pelo catálogo. O campo de captura é `ui/terminal/CaptureInput.tsx` (também desligado de preenchimento automático): o `Enter` chega por `onSubmitEditing` e o `Backspace` por `onKeyPress`, ambos como tecla; o campo não abre o teclado quando o painel não recebe input. A barra de teclas é `ui/terminal/KeyBar.tsx`, com a repetição das setas em `useKeyRepeat.ts`. Duas decisões do orquestrador, a confirmar com o dono:
+> **Na implementação (2026-11-17), nas telas:** o controlador do terminal (`src/controllers/terminalSession.ts`) liga o `InputSender`, os modificadores e o colar ao painel na tela, e cada recusa vira um evento `input-refused` com o código, que a tela explica pelo catálogo. O campo de captura é `ui/terminal/CaptureInput.tsx` (também desligado de preenchimento automático): o `Enter` chega por `onSubmitEditing` e o `Backspace` por `onKeyPress`, ambos como tecla; o campo não abre o teclado quando o painel não recebe input. A barra de teclas é `ui/terminal/KeyBar.tsx` (duas linhas; uma em paisagem), e as setas, com a repetição em `useKeyRepeat.ts`, são o teclado de setas `ui/terminal/ArrowPad.tsx`, dentro da área da grade e não da barra (no Android o toque fora dos limites do pai não chega ao filho). Os símbolos da barra vão por `typeText`, como o texto do teclado do sistema. As opções de vista da grade (caber a largura, seguir o cursor, voltar ao fim) são itens do menu da aba, que recebe uma cópia do estado da grade ao abrir (`TerminalViewOptions`). Duas decisões do orquestrador, a confirmar com o dono:
 >
 > - **`Esc` não consome o armado** (anatomia §4.8, "Esc e Fn não consomem o armado"): o `Esc` da barra sai **sem** modificadores e deixa os armados para a próxima tecla, por `pressNamed(pane, key, { keepModifiers: true })` em `src/input/send.ts`.
 > - **Colagem pelo teclado vira colar**: texto que chega do campo de captura com quebra de linha (`\r` ou `\n`) veio da área de transferência do próprio teclado (Gboard, iOS), porque a digitação nunca traz quebra de linha. A tela do terminal o manda pelo fluxo de colar (`pasteRequest`, com a confirmação), e não como `text-input`.

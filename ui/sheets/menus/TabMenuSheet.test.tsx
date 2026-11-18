@@ -10,7 +10,7 @@ import { renderWithOverlays } from "@ui/overlay/testing";
 import { duration } from "@ui/theme";
 
 import { createFakeSheetSession, type FakeSheetSession } from "../testing";
-import { openTabMenu, tabMenuContext, type TabMenuProps } from "./TabMenuSheet";
+import { openTabMenu, tabMenuContext, type TabMenuProps, type TerminalViewOptions } from "./TabMenuSheet";
 
 const hidden = { includeHiddenElements: true } as const;
 const sep = t("a11y.separator");
@@ -172,6 +172,130 @@ describe("TabMenuSheet", () => {
   it("has no Close pane from the terminal on a tab with one pane", async () => {
     await openMenu(session(), { tabId: 1, fromTerminal: { paneId: 100 } });
     expect(menuOrder()).not.toContain("close-pane");
+  });
+
+  describe("view options from the terminal", () => {
+    function view(overrides: Partial<TerminalViewOptions> = {}): TerminalViewOptions {
+      return {
+        isFit: false,
+        wide: true,
+        followingCursor: false,
+        atBottom: false,
+        onFitWidth: jest.fn(),
+        onFollowCursor: jest.fn(),
+        onScrollToBottom: jest.fn(),
+        ...overrides,
+      };
+    }
+
+    /** The items and dividers of the menu, in order, view options included. */
+    function fullOrder(): string[] {
+      return screen
+        .getAllByTestId(
+          /^tab-menu-(fit-width|follow-cursor|scroll-to-bottom|view-divider|rename|move-to-group|move-to-window|new-group|divider|close-pane|close-tab)$/,
+          hidden,
+        )
+        .map((element) => String(element.props.testID).replace("tab-menu-", ""));
+    }
+
+    it("come first, then a divider, then the items of the tab", async () => {
+      await openMenu(session(), { tabId: 1, fromTerminal: { paneId: 100, view: view() } });
+      expect(fullOrder()).toEqual([
+        "fit-width",
+        "follow-cursor",
+        "scroll-to-bottom",
+        "view-divider",
+        "rename",
+        "move-to-group",
+        "move-to-window",
+        "new-group",
+        "divider",
+        "close-tab",
+      ]);
+      expect(screen.getByLabelText(t("terminal.fit_width"))).toBeTruthy();
+      expect(screen.getByLabelText(t("terminal.follow_cursor"))).toBeTruthy();
+      expect(screen.getByLabelText(t("terminal.scroll_to_bottom"))).toBeTruthy();
+    });
+
+    it("are absent from the tree and from a terminal that hands no view", async () => {
+      await openMenu(session(), { tabId: 1 });
+      expect(fullOrder()).not.toContain("fit-width");
+      await finishTransition();
+      await openMenu(session(), { tabId: 1, fromTerminal: { paneId: 100 } });
+      expect(fullOrder()).not.toContain("fit-width");
+    });
+
+    it("are on a pinned tab too", async () => {
+      await openMenu(session(), { tabId: 4, fromTerminal: { paneId: 400, view: view() } });
+      expect(fullOrder()).toEqual([
+        "fit-width",
+        "follow-cursor",
+        "scroll-to-bottom",
+        "view-divider",
+        "rename",
+        "divider",
+        "close-tab",
+      ]);
+    });
+
+    it("dim what does not apply, and never remove it", async () => {
+      await openMenu(session(), {
+        tabId: 1,
+        fromTerminal: { paneId: 100, view: view({ isFit: true, wide: false, atBottom: true }) },
+      });
+      for (const id of ["fit-width", "follow-cursor", "scroll-to-bottom"]) {
+        expect(screen.getByTestId(`tab-menu-${id}`).props.accessibilityState).toMatchObject({ disabled: true });
+      }
+      expect(screen.getByText(t("tab_menu.not_wide_note"))).toBeTruthy();
+    });
+
+    it("fit the width: closes the menu, then acts", async () => {
+      const options = view();
+      await openMenu(session(), { tabId: 1, fromTerminal: { paneId: 100, view: options } });
+      await fireEvent.press(screen.getByTestId("tab-menu-fit-width"));
+      await finishTransition();
+      expect(options.onFitWidth).toHaveBeenCalledTimes(1);
+      expect(screen.queryByTestId("tab-menu")).toBeNull();
+    });
+
+    it("scroll to the bottom: closes the menu, then acts", async () => {
+      const options = view();
+      await openMenu(session(), { tabId: 1, fromTerminal: { paneId: 100, view: options } });
+      await fireEvent.press(screen.getByTestId("tab-menu-scroll-to-bottom"));
+      await finishTransition();
+      expect(options.onScrollToBottom).toHaveBeenCalledTimes(1);
+      expect(screen.queryByTestId("tab-menu")).toBeNull();
+    });
+
+    it("follow the cursor is a toggle: it shows its state and hands the opposite one", async () => {
+      const off = view({ followingCursor: false });
+      await openMenu(session(), { tabId: 1, fromTerminal: { paneId: 100, view: off } });
+      const item = screen.getByTestId("tab-menu-follow-cursor");
+      expect(item.props.accessibilityRole).toBe("checkbox");
+      expect(item.props.accessibilityState).toMatchObject({ checked: false });
+      expect(screen.queryByTestId("tab-menu-follow-cursor-check", hidden)).toBeNull();
+      await fireEvent.press(item);
+      await finishTransition();
+      expect(off.onFollowCursor).toHaveBeenCalledWith(true);
+    });
+
+    it("follow the cursor on shows a check and turns it off", async () => {
+      const on = view({ followingCursor: true });
+      await openMenu(session(), { tabId: 1, fromTerminal: { paneId: 100, view: on } });
+      expect(screen.getByTestId("tab-menu-follow-cursor").props.accessibilityState).toMatchObject({ checked: true });
+      expect(screen.getByTestId("tab-menu-follow-cursor-check", hidden)).toBeTruthy();
+      await fireEvent.press(screen.getByTestId("tab-menu-follow-cursor"));
+      await finishTransition();
+      expect(on.onFollowCursor).toHaveBeenCalledWith(false);
+    });
+
+    it("do not send anything to the desktop", async () => {
+      const fake = session();
+      await openMenu(fake, { tabId: 1, fromTerminal: { paneId: 100, view: view() } });
+      await fireEvent.press(screen.getByTestId("tab-menu-fit-width"));
+      await finishTransition();
+      expect(fake.sent).toEqual([]);
+    });
   });
 
   it("hands Rename, the moves and New group to the callbacks after closing", async () => {

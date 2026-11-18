@@ -66,23 +66,44 @@ export const KEY_BAR_KEYS: Readonly<Record<KeyBarKeyId, NamedKey>> = {
   f12: NamedKey.f12,
 };
 
-/** Layout of the bar in order, as the PRD lists it. */
-export const KEY_BAR_LAYOUT: readonly KeyBarId[] = [
-  "esc",
-  "tab",
-  "shift",
-  "ctrl",
-  "alt",
-  "up",
-  "down",
-  "left",
-  "right",
-  "home",
-  "end",
-  "pgup",
-  "pgdn",
-  "fn",
+/** The "Paste" key: reads the clipboard, sends nothing by itself. */
+export type KeyBarPasteId = "paste";
+
+/** Row 1 of the bar, fixed, in order (anatomy §4.8). */
+export const KEY_BAR_FIXED = ["esc", "tab", "shift", "ctrl", "alt", "fn", "paste"] as const;
+
+/** The start of the scrolling row 2: navigation keys, in order. */
+export const KEY_BAR_NAVIGATION = ["home", "end", "pgup", "pgdn"] as const;
+
+/** A symbol key: typed as text, so an armed modifier applies to it like to the system keyboard. */
+export type KeyBarSymbol = {
+  readonly text: string;
+  /** Last part of the catalog key `keybar.a11y.symbol_<id>`. */
+  readonly id: "pipe" | "tilde" | "slash" | "backslash" | "hyphen" | "underscore" | "backtick";
+};
+
+/** The symbols the phone keyboard hides behind a second layer, after the navigation keys. */
+export const KEY_BAR_SYMBOLS: readonly KeyBarSymbol[] = [
+  { text: "|", id: "pipe" },
+  { text: "~", id: "tilde" },
+  { text: "/", id: "slash" },
+  { text: "\\", id: "backslash" },
+  { text: "-", id: "hyphen" },
+  { text: "_", id: "underscore" },
+  { text: "`", id: "backtick" },
 ];
+
+/** Layout of the bar in order: row 1, then the navigation keys of row 2 (the symbols are not named keys). */
+export const KEY_BAR_LAYOUT: readonly (KeyBarId | KeyBarPasteId)[] = [
+  ...KEY_BAR_FIXED,
+  ...KEY_BAR_NAVIGATION,
+];
+
+/** The arrow pad (anatomy §4.7): the top key, then the bottom row left to right. */
+export const ARROW_PAD_LAYOUT = {
+  top: "up",
+  bottom: ["left", "down", "right"],
+} as const;
 
 export function isKeyBarKey(id: KeyBarId): id is KeyBarKeyId {
   return Object.hasOwn(KEY_BAR_KEYS, id);

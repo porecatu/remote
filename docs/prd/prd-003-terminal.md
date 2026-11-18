@@ -47,13 +47,13 @@ A tela do terminal é onde o app entrega valor: ler a saída de um build, ver o 
 ### Histórico
 
 - **RF-3.11** Rolar para cima além do topo da tela pede páginas de scrollback (`scrollback-request`, até 500 linhas por pedido) conforme o usuário avança, e as mostra acima da grade viva. Rolar no app **não** move a rolagem do desktop.
-- **RF-3.12** Enquanto o usuário está no histórico, a grade viva continua sendo atualizada embaixo; o app corrige o deslocamento quando o `history` cresce, para o texto que o usuário lê não "andar". Um botão "voltar ao fim" aparece enquanto ele está fora do fundo.
+- **RF-3.12** Enquanto o usuário está no histórico, a grade viva continua sendo atualizada embaixo; o app corrige o deslocamento quando o `history` cresce, para o texto que o usuário lê não "andar". Um item "Voltar ao fim" do menu da aba (`ellipsis-vertical`) leva ao fundo; fica esmaecido enquanto o usuário já está nele.
 - **RF-3.13** Na tela alternativa (`alt = true`, TUIs como `vim`, `htop`), não há histórico, e o gesto de rolar vertical vira rolagem da grade quando ela é mais alta que a tela.
 
 ### Input
 
 - **RF-3.14** Tocar na grade abre o teclado do sistema. O texto digitado (inclusive acentos, composição de IME e ditado) vai como `text-input` (nome da mensagem na spec).
-- **RF-3.15** Acima do teclado, uma **barra de teclas especiais**: `Esc`, `Tab`, `Shift`, `Ctrl`, `Alt`, setas, `Home`/`End`, `PgUp`/`PgDn` e um acesso a `F1`–`F12`. As teclas nomeadas vão como `key` com o `named-key` da spec.
+- **RF-3.15** Acima do teclado, uma **barra de teclas especiais** em duas linhas: a primeira, fixa, com `Esc`, `Tab`, `Shift`, `Ctrl`, `Alt`, um acesso a `F1`–`F12` (`Fn`) e `Colar`; a segunda, rolável, com `Home`/`End`, `PgUp`/`PgDn` e os símbolos `|` `~` `/` `\` `-` `_` `` ` ``. As **setas** ficam num **teclado de setas** à parte, em T invertido, colado ao topo da barra, no canto inferior direito da grade. As teclas nomeadas vão como `key` com o `named-key` da spec, e os símbolos como texto (com um modificador armado, como `key`).
 - **RF-3.16** `Shift`, `Ctrl` e `Alt` são **modificadores com trava**: um toque vale para a próxima tecla, dois toques travam até um terceiro. `Ctrl` + uma letra do teclado do sistema vai como `key { key: "c", mods: Ctrl }`, não como texto; `Shift` + uma letra vai como `key` com a letra em maiúscula e `mods: Shift`.
 - **RF-3.17** **Colar** (menu do sistema ou botão na barra) vai como `paste`; o desktop aplica bracketed paste e as regras do colar local. Colar mais de uma linha pede confirmação no app, mostrando as primeiras linhas.
 
@@ -83,8 +83,8 @@ A tela segue a [anatomia](../design/proposta-de-anatomia.md) §4.6 a §4.11. Imp
 |---|---|
 | RF-3.1 a RF-3.3, RF-3.26 | rota `app/desktop/[id]/tab/[tab].tsx`; `ui/screens/terminal/` (`TerminalScreen`, `useTerminalSession`); controlador `src/controllers/terminalSession.ts` sobre `src/session/subscription.ts` |
 | RF-3.4, RF-3.5 | grade em `ui/terminal/grid/` (motor em `gridEngine.ts`, uma gravação por linha, box-drawing e blocos como formas em `boxDrawing.ts`), cores de `src/grid/colorMath.ts`, fonte de `ui/theme/fonts.ts` |
-| RF-3.6 a RF-3.13 | contas de zoom, rolagem, cursor e histórico em `src/terminal/viewport.ts`; gestos em `ui/terminal/grid/useGridGestures.ts`; `ui/terminal/FloatingButtons.tsx` e `ZoomChip.tsx` |
-| RF-3.14 a RF-3.19, RF-3.25 | campo de captura `ui/terminal/CaptureInput.tsx`; barra de teclas `ui/terminal/KeyBar.tsx` e `KeyBarKey.tsx`; colar em `ui/terminal/PasteDialog.tsx`; envio em `src/input/` |
+| RF-3.6 a RF-3.13 | contas de zoom, rolagem, cursor e histórico em `src/terminal/viewport.ts`; gestos em `ui/terminal/grid/useGridGestures.ts`; `ui/terminal/ZoomChip.tsx`; os itens "Caber a largura", "Seguir o cursor" e "Voltar ao fim" no menu da aba (`ui/sheets/menus/TabMenuSheet.tsx`) |
+| RF-3.14 a RF-3.19, RF-3.25 | campo de captura `ui/terminal/CaptureInput.tsx`; barra de teclas `ui/terminal/KeyBar.tsx` e `KeyBarKey.tsx`; teclado de setas `ui/terminal/ArrowPad.tsx`; colar em `ui/terminal/PasteDialog.tsx`; envio em `src/input/` |
 | RF-3.20 a RF-3.23 | `ui/terminal/PaneStateCard.tsx` e `TerminalBar.tsx` |
 | RF-3.24 | regra de todas as camadas: nenhum log de conteúdo (`src/log.ts`) |
 
