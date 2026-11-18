@@ -3,7 +3,7 @@ import { duration, icon, opacity, size, spaceScale, spacing, transitionDuration,
 
 describe("tokens", () => {
   it("keeps component spacing on space.scale, except the values the anatomy fixes", () => {
-    const exceptions = new Set(["dialogPadding", "keyGap", "keyPaddingXGrow", "rowLineGap"]);
+    const exceptions = new Set(["dialogPadding", "keyGap", "rowLineGap"]);
     for (const [name, value] of Object.entries(spacing)) {
       if (!exceptions.has(name)) {
         expect([name, (spaceScale as readonly number[]).includes(value)]).toEqual([name, true]);
@@ -11,16 +11,13 @@ describe("tokens", () => {
     }
     expect(spacing.dialogPadding).toBe(20);
     expect(spacing.keyGap).toBe(6);
-    expect(spacing.keyPaddingXGrow).toBe(0);
     expect(spacing.rowLineGap).toBe(0);
   });
 
-  it("sizes the key bar for two rows, and one in landscape", () => {
+  it("sizes the key bar for one row of keys of 44", () => {
     expect(size.key).toBe(44);
-    expect(size.keybarHeight).toBe(100);
-    expect(size.keybarHeightLandscape).toBe(52);
-    // Two keys, the row gap and room for the top border and the margins.
-    expect(size.keybarHeight).toBeGreaterThanOrEqual(2 * size.key + size.keybarRowGap + 2 * spacing.keyMargin);
+    expect(size.keybarHeight).toBe(52);
+    expect(size.keybarHeight).toBeGreaterThanOrEqual(size.key + 2 * spacing.keyMargin);
   });
 
   it("no longer has the floating button tokens", () => {

@@ -7,11 +7,10 @@
 //   pane chip, `keyboard`, the tab menu with Close pane), 40 high in landscape;
 //   the connection band under it while the session is not `ready`;
 // - the grid on the desktop's `theme`, edge to edge inside the safe area, with
-//   the zoom chip, the arrow pad (while the keyboard is open) and the card of a
-//   pane that is not running over it. It dims while the session reconnects
-//   (read-only, the last known state) and while the pane reconnects (§4.10);
-//   the view options (fit the width, follow the cursor, back to the end) are in
-//   the tab menu;
+//   the zoom chip and the card of a pane that is not running over it. It dims
+//   while the session reconnects (read-only, the last known state) and while
+//   the pane reconnects (§4.10); the view options (fit the width, follow the
+//   cursor, back to the end) are in the tab menu;
 // - the key bar, stuck to the system keyboard and shown only while it is open
 //   for the terminal; or, for an exited or disconnected pane, its banner.
 //
@@ -51,7 +50,6 @@ import { type TerminalViewOptions, pendingKinds, sendOrWarn } from "@ui/sheets/m
 import { useRetained } from "@ui/sheets/menus/useRetained";
 import { openTabMenuFor } from "@ui/sheets/openers";
 import { CaptureInput, type CaptureInputHandle } from "@ui/terminal/CaptureInput";
-import { ArrowPad } from "@ui/terminal/ArrowPad";
 import { KeyBar } from "@ui/terminal/KeyBar";
 import { openPanePicker } from "@ui/terminal/PanePickerSheet";
 import { PaneStateBanner, PaneStateCard, paneStatePresentation } from "@ui/terminal/PaneStateCard";
@@ -377,8 +375,7 @@ function LiveTerminal({ session, desktopId, tabId, onBack }: LiveTerminalProps) 
   const presentation = paneStatePresentation(view.paneState);
   const banner = presentation?.placement === "bottom";
   const showKeyBar = keyboardVisible && !banner;
-  const keyBarHeight = landscape ? size.keybarHeightLandscape : size.keybarHeight;
-  useToastOffset(showKeyBar ? keyBarHeight : banner ? size.bottomBannerHeight : 0);
+  useToastOffset(showKeyBar ? size.keybarHeight : banner ? size.bottomBannerHeight : 0);
 
   const gridBackground = theme === null ? colors.bgTerminal : rgbToCss(theme.bg);
   const dimGrid = presentation?.dimGrid === true || !live;
@@ -421,14 +418,6 @@ function LiveTerminal({ session, desktopId, tabId, onBack }: LiveTerminalProps) 
             />
           </View>
           <ZoomChip visible={gridState.zoomChipVisible} percent={gridState.zoomPercent} />
-          {showKeyBar ? (
-            <ArrowPad
-              landscape={landscape}
-              onKey={(id) => {
-                terminal.pressKey(id);
-              }}
-            />
-          ) : null}
           {presentation !== null && !banner ? (
             <PaneStateCard
               state={view.paneState}
@@ -458,7 +447,7 @@ function LiveTerminal({ session, desktopId, tabId, onBack }: LiveTerminalProps) 
           </View>
         ) : showKeyBar ? (
           <View style={[sides, { backgroundColor: colors.bgBar }]}>
-            <TerminalKeyBar terminal={terminal} landscape={landscape} onPaste={paste.pasteFromClipboard} />
+            <TerminalKeyBar terminal={terminal} onPaste={paste.pasteFromClipboard} />
           </View>
         ) : (
           <View style={{ height: insets.bottom }} />
@@ -471,26 +460,20 @@ function LiveTerminal({ session, desktopId, tabId, onBack }: LiveTerminalProps) 
 /** The key bar over the controller: keys and modifiers go to it, Paste reads the clipboard. */
 function TerminalKeyBar({
   terminal,
-  landscape,
   onPaste,
 }: {
   readonly terminal: TerminalSession;
-  readonly landscape: boolean;
   readonly onPaste: () => Promise<void>;
 }) {
   const modifiers = useStoreState(terminal.store, selectModifiers);
   return (
     <KeyBar
       modifiers={modifiers}
-      landscape={landscape}
       onKey={(id) => {
         terminal.pressKey(id);
       }}
       onModifier={(modifier) => {
         terminal.tapModifier(modifier);
-      }}
-      onText={(text) => {
-        terminal.typeText(text);
       }}
       onPaste={() => {
         void onPaste();

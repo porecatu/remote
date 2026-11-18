@@ -64,12 +64,8 @@ export const size = {
   terminalBarHeight: 48,
   /** `bar.height` of the terminal bar in landscape (§4.6). */
   terminalBarHeightLandscape: 40,
-  /** `keybar.height`: two rows of keys of 44 (§4.8), a 4 gap and margins of about 4. */
-  keybarHeight: 100,
-  /** `keybar.height` in landscape: one row (keys of 44, margin of 4). */
-  keybarHeightLandscape: 52,
-  /** `keybar.row-gap`: between the two rows of the bar. */
-  keybarRowGap: 4,
+  /** `keybar.height` (keys of 44, margin of 4). */
+  keybarHeight: 52,
   /** `gutter`: side margin of screens, plus the safe area. */
   gutter: 16,
   /** `badge.height`. */
@@ -253,8 +249,6 @@ export const spacing = {
   keyGap: 6,
   /** `key.padding-x`. */
   keyPaddingX: 8,
-  /** `key.padding-x` of a key that shares the row (row 1 of the bar): none (§4.8 fixes 0), so "Shift" fits at 320. */
-  keyPaddingXGrow: 0,
   /** `zoom-chip.padding-x`. */
   zoomChipPaddingX: 12,
   /** `zoom-chip.top`. */

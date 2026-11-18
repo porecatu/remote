@@ -344,7 +344,6 @@ describe("terminal session: input", () => {
     expect(r.terminal.pressKey("alt")).toBe(true);
     expect(r.terminal.getState().modifiers.alt).toBe("locked");
     expect(r.terminal.pressKey("esc")).toBe(true);
-    expect(r.terminal.pressKey("fn")).toBe(false);
     expect(r.terminal.pressNamedKey(NamedKey.backspace)).toBe(true);
     expect(received(r, "key")).toEqual([
       { type: "key", pane: 100, key: NamedKey.escape, mods: 0 },

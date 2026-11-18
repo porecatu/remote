@@ -3,13 +3,9 @@
 import { NAMED_KEYS, NamedKey } from "@/protocol";
 
 import {
-  ARROW_PAD_LAYOUT,
   FUNCTION_KEYS,
-  KEY_BAR_FIXED,
   KEY_BAR_KEYS,
   KEY_BAR_LAYOUT,
-  KEY_BAR_NAVIGATION,
-  KEY_BAR_SYMBOLS,
   isKeyBarKey,
   isKeyBarModifier,
   namedKeyOf,
@@ -47,38 +43,36 @@ describe("key bar", () => {
     expect(namedKeyOf("f7")).toBe(NamedKey.f7);
   });
 
-  it("sends no key for modifiers and the F1-F12 access", () => {
+  it("sends no key for modifiers", () => {
     expect(namedKeyOf("ctrl")).toBeNull();
     expect(namedKeyOf("alt")).toBeNull();
-    expect(namedKeyOf("fn")).toBeNull();
     expect(isKeyBarModifier("ctrl")).toBe(true);
     expect(isKeyBarModifier("alt")).toBe(true);
     expect(isKeyBarModifier("shift")).toBe(true);
     expect(namedKeyOf("shift")).toBeNull();
     expect(isKeyBarModifier("esc")).toBe(false);
-    expect(isKeyBarKey("fn")).toBe(false);
     expect(isKeyBarKey("ctrl")).toBe(false);
     expect(isKeyBarKey("f1")).toBe(true);
   });
 
-  it("lays out the buttons of RF-3.15 once each: row 1 fixed, then the navigation keys", () => {
+  it("lays out the buttons of RF-3.15 once each, in one row: keys, arrows, navigation, Paste, F1-F12", () => {
     expect(new Set(KEY_BAR_LAYOUT).size).toBe(KEY_BAR_LAYOUT.length);
-    expect(KEY_BAR_FIXED).toEqual(["esc", "tab", "shift", "ctrl", "alt", "fn", "paste"]);
-    expect(KEY_BAR_NAVIGATION).toEqual(["home", "end", "pgup", "pgdn"]);
-    for (const id of ["esc", "tab", "shift", "ctrl", "alt", "fn", "paste", "home", "end", "pgup", "pgdn"] as const) {
-      expect(KEY_BAR_LAYOUT).toContain(id);
-    }
-  });
-
-  it("keeps the arrows out of the bar, in the arrow pad: an inverted T", () => {
-    for (const id of ["up", "down", "left", "right"] as const) {
-      expect(KEY_BAR_LAYOUT).not.toContain(id);
-    }
-    expect([ARROW_PAD_LAYOUT.top, ...ARROW_PAD_LAYOUT.bottom].sort()).toEqual(["down", "left", "right", "up"]);
-  });
-
-  it("lists the symbols once each, as single characters", () => {
-    expect(KEY_BAR_SYMBOLS.map((symbol) => symbol.text).join("")).toBe("|~/\\-_`");
-    expect(new Set(KEY_BAR_SYMBOLS.map((symbol) => symbol.id)).size).toBe(KEY_BAR_SYMBOLS.length);
+    expect(KEY_BAR_LAYOUT).toEqual([
+      "esc",
+      "tab",
+      "shift",
+      "ctrl",
+      "alt",
+      "left",
+      "down",
+      "up",
+      "right",
+      "home",
+      "end",
+      "pgup",
+      "pgdn",
+      "paste",
+      ...FUNCTION_KEYS,
+    ]);
   });
 });

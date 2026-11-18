@@ -9,7 +9,7 @@ primeira versão publicada nas lojas.
 Implementação inicial: a camada de lógica (2026-11-16) e as telas dos PRDs 001
 a 004 (2026-11-17), conforme a [anatomia das telas](docs/design/proposta-de-anatomia.md)
 aprovada. O app segue a **especificação 0.4** do protocolo. Tudo o que entrou é
-verificado por teste automatizado em Node (`pnpm test`: 1637 testes em 129
+verificado por teste automatizado em Node (`pnpm test`: 1621 testes em 128
 suítes, com `jest-expo` e `@testing-library/react-native`); **nada foi rodado
 num aparelho**, e o [ADR-0002](docs/adr/0002-render-da-grade-com-skia.md) segue
 Proposto até a medição do render em aparelho. Dívida de verificação no
@@ -17,12 +17,12 @@ Proposto até a medição do render em aparelho. Dívida de verificação no
 
 ### Adicionado
 
-- **Barra de teclas em duas linhas e teclado de setas** (anatomia §4.8, §4.7; RF-3.15; pedido do dono em 2026-11-18). A linha 1 é fixa e divide a largura (`Esc`, `Tab`, `Shift`, `Ctrl`, `Alt`, `Fn`, `Colar`); a linha 2 rola (`Home`, `End`, `PgUp`, `PgDn` e os símbolos `|` `~` `/` `\` `-` `_` `` ` ``, enviados como texto, de modo que um modificador armado os transforma em `key`). `Fn` troca a linha 2 por `F1`–`F12` e fica "ligado" enquanto aberto. A barra passa a 100 de altura (teclas de 44); em paisagem volta a uma linha de 52. As setas saem da barra e viram o **teclado de setas** (`ui/terminal/ArrowPad.tsx`): T invertido, opaco, colado ao topo da barra no canto inferior direito, com a mesma repetição ao segurar (em paisagem, uma fileira de quatro).
+- **Barra de teclas toda rolável, em uma linha** (anatomia §4.8; RF-3.15; pedido do dono em 2026-11-18): `Esc`, `Tab`, `Shift`, `Ctrl` e `Alt` agora rolam junto com o resto, na ordem `Esc Tab Shift Ctrl Alt | ← ↓ ↑ → | Home End PgUp PgDn | Colar | F1…F12`, em grupos separados por filetes. As teclas `F1`–`F12` ficam sempre à mão, no fim da linha, e **não há mais `Fn`**. Uma primeira versão do dia, com duas linhas, teclado de setas à parte e símbolos (`fa308d6`), foi recusada pelo dono e desfeita.
 - **Opções de vista no menu da aba**: "Caber a largura", "Seguir o cursor" (item de marcar, `SheetItem` ganha `checked`) e "Voltar ao fim" passam a ser os primeiros itens do menu de reticências do terminal, sempre presentes e esmaecidos quando não se aplicam.
 
 ### Removido
 
-- Os **botões flutuantes** da grade (`FloatingButtons`) e os tokens `fab`, `fab.gap`, `fab.inset`, `icon.fab`, `shadow.fab` e `opacity.fab`: o canto inferior direito é do teclado de setas, e as três opções foram para o menu da aba.
+- Os **botões flutuantes** da grade (`FloatingButtons`) e os tokens `fab`, `fab.gap`, `fab.inset`, `icon.fab`, `shadow.fab` e `opacity.fab`: as três opções foram para o menu da aba, e a grade ficou livre.
 
 - **Tecla `Shift` na barra de teclas** (entre `Tab` e `Ctrl`), modificador com trava como `Ctrl` e `Alt` (RF-3.16): `Shift` + `Tab`, `Shift` + setas e `Shift` + letra do teclado do sistema. A letra vai em maiúscula, com o bit `Shift`, porque o desktop não muda a caixa por `Shift`.
 

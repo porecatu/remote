@@ -359,38 +359,12 @@ describe("TerminalScreen — input", () => {
     expect(received(r, "paste")).toEqual([{ type: "paste", pane: 100, text: "uptime" }]);
   });
 
-  it("shows the arrow pad with the key bar, and an arrow takes the armed modifier", async () => {
+  it("sends an arrow of the bar with the armed modifier", async () => {
     const r = await rig();
-    expect(screen.queryByTestId("arrowpad")).toBeNull();
     await openKeyboard();
-    expect(screen.getByTestId("arrowpad")).toBeTruthy();
-    // The pad is in the grid area, not in the bar: a touch outside the parent never reaches a child on Android.
-    expect(screen.getByTestId("keybar")).not.toContainElement(screen.getByTestId("arrowpad"));
-
     await fireEvent.press(screen.getByTestId("keybar-ctrl"));
-    await fireEvent.press(screen.getByTestId("arrowpad-up"));
+    await fireEvent.press(screen.getByTestId("keybar-up"));
     expect(received(r, "key")).toEqual([{ type: "key", pane: 100, key: NamedKey.up, mods: 0x01 }]);
-  });
-
-  it("hides the arrow pad and the key bar together when the keyboard closes", async () => {
-    await rig();
-    await openKeyboard();
-    expect(screen.getByTestId("arrowpad")).toBeTruthy();
-    keyboardShown = false;
-    await fireEvent(captureField(), "blur");
-    expect(screen.queryByTestId("arrowpad")).toBeNull();
-    expect(screen.queryByTestId("keybar")).toBeNull();
-  });
-
-  it("types a symbol of the bar as text, and as a key when Ctrl is armed", async () => {
-    const r = await rig();
-    await openKeyboard();
-    await fireEvent.press(screen.getByTestId("keybar-symbol-pipe"));
-    expect(received(r, "text-input")).toEqual([{ type: "text-input", pane: 100, text: "|" }]);
-
-    await fireEvent.press(screen.getByTestId("keybar-ctrl"));
-    await fireEvent.press(screen.getByTestId("keybar-symbol-backslash"));
-    expect(received(r, "key")).toEqual([{ type: "key", pane: 100, key: "\\", mods: 0x01 }]);
   });
 });
 
