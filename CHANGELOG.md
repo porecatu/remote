@@ -138,6 +138,10 @@ Proposto até a medição do render em aparelho. Dívida de verificação no
 
 ### Mudado
 
+- **Ícone adaptativo do Android 25% menor**: as camadas `adaptive-foreground.png`
+  e `adaptive-monochrome.png` (1024×1024) passam a ter a arte a 75% do tamanho,
+  centralizada, para não encostar na máscara do ícone no lançador.
+
 - **Folga da grade do terminal nas bordas do quadro:** tokens `grid.padding-x`
   (8, laterais) e `grid.padding-bottom` (16, embaixo; o `grid.padding-top` subiu de 4 para 12), propostos na
   [anatomia](docs/design/proposta-de-anatomia.md) §2.5 e **à espera do aval do
