@@ -17,6 +17,7 @@ Proposto até a medição do render em aparelho. Dívida de verificação no
 
 ### Adicionado
 
+
 - **Projeto Expo** SDK 58 (React Native 0.88.1, React 19.3.0, Hermes,
   `expo-router`, *development build*) em TypeScript 6.0.3 estrito, com Node
   26.13.0, pnpm 12.17.0 e todas as dependências em versão exata
@@ -125,6 +126,8 @@ Proposto até a medição do render em aparelho. Dívida de verificação no
   mensagem para input recusado por tamanho (RF-3.25).
 
 ### Corrigido
+
+- **Teclas perdidas ou repetidas ao digitar rápido no Android (Gboard).** O campo de captura (`ui/terminal/CaptureInput.tsx`) deixou de ser controlado (`value=""`, cujo reset é assíncrono no React Native) e passou a enviar só a diferença para o texto anterior: o que entrou vai como texto e o que saiu, como `backspace`. O campo é esvaziado no Enter, no blur e depois de uma pausa quando acumula muito. Verificado só em Node; a confirmação em aparelho é dívida.
 
 - **Terminal em branco ao abrir uma aba parada** (só aparecia com saída nova ou
   ao girar o aparelho). O Reanimated 4 grava um *shared value* da thread JS de

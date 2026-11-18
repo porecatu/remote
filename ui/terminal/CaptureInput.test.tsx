@@ -11,11 +11,13 @@ import { CaptureInput, type CaptureInputHandle, type CaptureKey } from "./Captur
 // The Jest mock of `TextInput` shares `jest.fn` instance methods on its prototype.
 const focusSpy = () => jest.mocked(TextInput.prototype.focus);
 const blurSpy = () => jest.mocked(TextInput.prototype.blur);
+const clearSpy = () => jest.mocked(TextInput.prototype.clear);
 
 beforeEach(() => {
   jest.mocked(useColorScheme).mockReturnValue("dark");
   focusSpy().mockClear();
   blurSpy().mockClear();
+  clearSpy().mockClear();
 });
 
 async function setup(enabled = true) {
@@ -54,15 +56,117 @@ describe("CaptureInput", () => {
     });
   });
 
-  it("sends every change as text and keeps the field empty", async () => {
+  it("is not a controlled field, so there is no reset to race", async () => {
+    const { field } = await setup();
+    expect(field().props.value).toBeUndefined();
+  });
+
+  it("sends only what each change added, even when the field was not emptied", async () => {
     const { field, onText, onKey } = await setup();
     await fireEvent.changeText(field(), "l");
-    await fireEvent.changeText(field(), "s");
-    // IME composition and dictation arrive the same way, in one piece.
-    await fireEvent.changeText(field(), "ação");
-    expect(onText.mock.calls).toEqual([["l"], ["s"], ["ação"]]);
-    expect(field().props.value).toBe("");
+    await fireEvent.changeText(field(), "ls");
+    await fireEvent.changeText(field(), "ls -");
+    expect(onText.mock.calls).toEqual([["l"], ["s"], [" -"]]);
     expect(onKey).not.toHaveBeenCalled();
+  });
+
+  it("does not repeat a growing composition", async () => {
+    const { field, onText } = await setup();
+    await fireEvent.changeText(field(), "h");
+    await fireEvent.changeText(field(), "he");
+    await fireEvent.changeText(field(), "hel");
+    expect(onText.mock.calls).toEqual([["h"], ["e"], ["l"]]);
+  });
+
+  it("sends the same character twice in a row", async () => {
+    const { field, onText } = await setup();
+    await fireEvent.changeText(field(), "l");
+    await fireEvent.changeText(field(), "ll");
+    expect(onText.mock.calls).toEqual([["l"], ["l"]]);
+  });
+
+  it("sends dictation and accents in one piece", async () => {
+    const { field, onText, onKey } = await setup();
+    await fireEvent.changeText(field(), "ação");
+    expect(onText.mock.calls).toEqual([["ação"]]);
+    expect(onKey).not.toHaveBeenCalled();
+  });
+
+  it("turns a replacement into backspaces and the new text", async () => {
+    const { field, onText, onKey } = await setup();
+    await fireEvent.changeText(field(), "c");
+    await fireEvent.changeText(field(), "ca");
+    await fireEvent.changeText(field(), "cá");
+    expect(onKey.mock.calls).toEqual([[NamedKey.backspace]]);
+    expect(onText.mock.calls).toEqual([["c"], ["a"], ["á"]]);
+  });
+
+  it("counts an emoji as one character when removing it", async () => {
+    const { field, onKey } = await setup();
+    await fireEvent.changeText(field(), "a😀");
+    await fireEvent.changeText(field(), "a");
+    expect(onKey.mock.calls).toEqual([[NamedKey.backspace]]);
+  });
+
+  it("sends Backspace over held text once, from the shorter text", async () => {
+    const { field, onKey } = await setup();
+    await fireEvent.changeText(field(), "ab");
+    await fireEvent(field(), "keyPress", { nativeEvent: { key: "Backspace" } });
+    await fireEvent.changeText(field(), "a");
+    expect(onKey.mock.calls).toEqual([[NamedKey.backspace]]);
+  });
+
+  it("empties the field and forgets its text on Enter and on blur", async () => {
+    const { field, onText, onKey } = await setup();
+    await fireEvent.changeText(field(), "a");
+    await fireEvent.changeText(field(), "ab");
+    await fireEvent(field(), "submitEditing", { nativeEvent: { text: "ab" } });
+    expect(clearSpy()).toHaveBeenCalledTimes(1);
+    // The emptied field now holds nothing: a new text is all new.
+    await fireEvent.changeText(field(), "c");
+    await fireEvent(field(), "blur");
+    expect(clearSpy()).toHaveBeenCalledTimes(2);
+    await fireEvent.changeText(field(), "d");
+    expect(onText.mock.calls).toEqual([["a"], ["b"], ["c"], ["d"]]);
+    expect(onKey.mock.calls).toEqual([[NamedKey.enter]]);
+  });
+
+  it("empties a field that piled up only after typing pauses", async () => {
+    jest.useFakeTimers();
+    try {
+      const { field } = await setup();
+      await fireEvent.changeText(field(), "x".repeat(300));
+      await act(() => {
+        jest.advanceTimersByTime(999);
+      });
+      expect(clearSpy()).not.toHaveBeenCalled();
+      // More typing restarts the wait.
+      await fireEvent.changeText(field(), "x".repeat(301));
+      await act(() => {
+        jest.advanceTimersByTime(999);
+      });
+      expect(clearSpy()).not.toHaveBeenCalled();
+      await act(() => {
+        jest.advanceTimersByTime(1);
+      });
+      expect(clearSpy()).toHaveBeenCalledTimes(1);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("does not empty a short field on a timer", async () => {
+    jest.useFakeTimers();
+    try {
+      const { field } = await setup();
+      await fireEvent.changeText(field(), "ls");
+      await act(() => {
+        jest.advanceTimersByTime(5000);
+      });
+      expect(clearSpy()).not.toHaveBeenCalled();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it("sends nothing for an empty change (the field being emptied)", async () => {

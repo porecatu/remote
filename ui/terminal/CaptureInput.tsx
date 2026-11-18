@@ -2,10 +2,15 @@
 // The invisible field that captures the system keyboard for the terminal
 // (architecture §5, PRD-003 RF-3.14, RF-3.18). Autocorrection, prediction,
 // capitalization and autofill are off; every change of its text goes out as
-// typed text (accents, IME composition and dictation included) and the field
-// is emptied again, so it never holds what was typed. `Backspace` of the
-// virtual keyboard becomes the `backspace` key and `Enter` the `enter` key,
-// both through `onKey`. Nothing typed is ever logged.
+// typed text (accents, IME composition and dictation included). The field is
+// not controlled: a controlled `value=""` is reset asynchronously by React
+// Native, and a fast burst of keys could land between the change and the reset
+// and be lost or sent twice. Instead the component remembers what the field
+// holds and sends only the difference from the previous text: added characters
+// as text, removed ones as `backspace`. The field is emptied on `Enter`, on
+// blur and after a pause once it holds a lot. `Backspace` over an empty field
+// becomes the `backspace` key and `Enter` the `enter` key, both through
+// `onKey`. Nothing typed is ever logged.
 //
 // A pane that cannot take input (`enabled` false, the controller's `canType`)
 // does not open the keyboard: `focus()` does nothing, and the field lets go
@@ -21,6 +26,11 @@ import {
 import { NamedKey } from "@/protocol";
 
 import { useTheme } from "../theme";
+
+/** Held characters past which the field is emptied, once typing pauses. */
+const MAX_HELD = 256;
+/** How long typing must pause before the field is emptied. */
+const IDLE_MS = 1000;
 
 /** What the screen calls on the field. */
 export interface CaptureInputHandle {
@@ -81,16 +91,57 @@ export function CaptureInput({
     }
   }, [enabled]);
 
+  // What the field holds right now, as far as we have seen it. Updated
+  // synchronously on every change, so a fast burst never races a reset.
+  const held = useRef("");
+  const idle = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cancelIdle = () => {
+    if (idle.current !== null) {
+      clearTimeout(idle.current);
+      idle.current = null;
+    }
+  };
+
+  /** Empties the field. `held` goes first, so the emptying is never read as typing. */
+  const empty = () => {
+    cancelIdle();
+    held.current = "";
+    input.current?.clear();
+  };
+
+  useEffect(() => cancelIdle, []);
+
   const onChangeText = (text: string) => {
-    // The field stays empty (`value=""`): what arrives is only the new text.
-    if (text.length > 0 && enabled) {
-      onText(text);
+    const before = Array.from(held.current);
+    const after = Array.from(text);
+    held.current = text;
+    if (enabled) {
+      let common = 0;
+      while (common < before.length && common < after.length && before[common] === after[common]) {
+        common += 1;
+      }
+      // Removed characters go out as `backspace`, added ones as one text.
+      for (let i = before.length; i > common; i -= 1) {
+        onKey(NamedKey.backspace);
+      }
+      if (common < after.length) {
+        onText(after.slice(common).join(""));
+      }
+    }
+    // Let go of what piled up, but only once typing has paused: emptying in
+    // the middle of a burst or a composition is the race this avoids.
+    cancelIdle();
+    if (after.length > MAX_HELD) {
+      idle.current = setTimeout(empty, IDLE_MS);
     }
   };
 
   const onKeyPress = (event: TextInputKeyPressEvent) => {
     // Characters come through `onChangeText`; `Enter` through `onSubmitEditing`.
-    if (event.nativeEvent.key === "Backspace" && enabled) {
+    // A `Backspace` over held text arrives as a shorter text and is sent there;
+    // only one over an empty field has no change event.
+    if (event.nativeEvent.key === "Backspace" && enabled && held.current.length === 0) {
       onKey(NamedKey.backspace);
     }
   };
@@ -99,6 +150,7 @@ export function CaptureInput({
     if (enabled) {
       onKey(NamedKey.enter);
     }
+    empty();
   };
 
   return (
@@ -110,13 +162,15 @@ export function CaptureInput({
     >
       <TextInput
         ref={input}
-        value=""
         editable={enabled}
         onChangeText={onChangeText}
         onKeyPress={onKeyPress}
         onSubmitEditing={onSubmitEditing}
         onFocus={() => onFocusChange?.(true)}
-        onBlur={() => onFocusChange?.(false)}
+        onBlur={() => {
+          empty();
+          onFocusChange?.(false);
+        }}
         // Enter keeps the keyboard open and writes no line break.
         submitBehavior="submit"
         multiline={false}
