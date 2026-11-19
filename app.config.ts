@@ -31,6 +31,7 @@ const config: ExpoConfig = {
     },
     // The static key lives in the Keystore (ADR-0003); never back it up.
     allowBackup: false,
+	versionCode: 0
   },
   plugins: [
     "expo-router",
