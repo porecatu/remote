@@ -9,20 +9,20 @@ const config: ExpoConfig = {
   name: "Porecatu Remote",
   slug: "porecatu-remote",
   scheme: "porecatu",
-  version: "0.0.0",
+  version: "0.10.0",
   platforms: ["ios", "android"],
   userInterfaceStyle: "automatic",
   icon: "./assets/icon/icon.png",
   extra: {
     eas: {
-      projectId: "f574c7c0-f1be-449f-8190-049ea296da10",
+		projectId: "6230f90e-d900-49b7-b590-c86a58e1ca14"
     },
   },
   ios: {
-    bundleIdentifier: "br.com.porecatu.remote",
+    bundleIdentifier: "com.porecatu.remote",
   },
   android: {
-    package: "br.com.porecatu.remote",
+    package: "com.porecatu.remote",
     // Same artwork as the desktop; the background is the dark `bg.base` token.
     adaptiveIcon: {
       foregroundImage: "./assets/icon/adaptive-foreground.png",
