@@ -13,6 +13,11 @@ const config: ExpoConfig = {
   platforms: ["ios", "android"],
   userInterfaceStyle: "automatic",
   icon: "./assets/icon/icon.png",
+  extra: {
+    eas: {
+      projectId: "f574c7c0-f1be-449f-8190-049ea296da10",
+    },
+  },
   ios: {
     bundleIdentifier: "br.com.porecatu.remote",
   },
