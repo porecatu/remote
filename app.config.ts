@@ -60,6 +60,9 @@ const config: ExpoConfig = {
         ],
       },
     ],
+    // Signs the local `release` build with the keystore from ~/.gradle/gradle.properties.
+    // Opt-in (PORECATU_LOCAL_SIGNING=1 at prebuild); EAS never sets it.
+    "./plugins/withLocalReleaseSigning",
     // expo-screen-capture (SDK 58) ships no config plugin: nothing to register.
     // Neither do react-native-svg, Gesture Handler, Reanimated, Worklets,
     // Keyboard Controller and Skia (autolinked native modules).
