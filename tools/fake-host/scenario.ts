@@ -36,6 +36,7 @@ import {
   type Span,
   type Style,
   type Tab,
+  type TabId,
   type Theme,
   type WorkspaceMessage,
 } from "../../src/protocol/index.ts";
@@ -565,6 +566,23 @@ export function buildWorkspace(rev = 1): WorkspaceMessage {
       },
     ],
   };
+}
+
+/** Every tab id of a workspace (pinned, loose and in groups). */
+export function collectTabs(workspace: WorkspaceMessage): Set<TabId> {
+  const tabs = new Set<TabId>();
+  for (const window of workspace.windows) {
+    for (const item of [...window.pinned, ...window.items]) {
+      if ("group" in item) {
+        for (const member of item.tabs) {
+          tabs.add(member.tab);
+        }
+      } else {
+        tabs.add(item.tab);
+      }
+    }
+  }
+  return tabs;
 }
 
 /** Size and state of every pane of a workspace, by id. */

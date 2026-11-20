@@ -11,7 +11,7 @@ O resultado da última verificação está no [roadmap](../../docs/roadmap.md), 
 - **Pareamento** pela URI do QR (`XX` com o token de uso único), confirmação no desktop e a sessão adotada (RF-1.10); nas rodadas seguintes, conexão `IK` pelo desktop salvo, mesmo depois de o desktop reiniciar.
 - **Sessão**: `welcome`, `theme`, `profiles` e o `workspace` restaurado; presença (`GET /v0/presence`); sair e voltar com o mesmo `host_instance`.
 - **Terminal**: assinatura e `grid-ack`, texto, Enter, colar, `Ctrl` da barra + `c`, uma página de scrollback e a campainha.
-- **As 14 ações**, cada uma conferida no `workspace` seguinte, e o `focused` de toda aba intacto depois de cada uma. Também `confirm-request` recusado (`cancelled`) e aceito, e os códigos `invalid-argument`, `unknown-tab`, `unknown-profile` e `unknown-group`.
+- **As ações** (14 na especificação 0.4; 13 desde a 0.5, sem `activate-tab`, com abrir uma aba conferido como **não** mudando o `active`), cada uma conferida no `workspace` seguinte, e o `focused` de toda aba intacto depois de cada uma. Também `confirm-request` recusado (`cancelled`) e aceito, e os códigos `invalid-argument`, `unknown-tab`, `unknown-profile` e `unknown-group`.
 - **Nenhuma janela do sistema levantada** (só no Windows): a janela em primeiro plano é a mesma antes e depois de mover aba e grupo para outra janela e de ativar uma aba na janela de trás.
 
 Fica de fora: aba fixada, `last-tab`, `busy`, SSH (`connecting`, `awaiting-desktop`) e `too-many-subscriptions`.

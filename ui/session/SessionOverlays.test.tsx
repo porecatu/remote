@@ -5,7 +5,7 @@ import { AccessibilityInfo, Text } from "react-native";
 
 import { createTranslator, setLocale } from "@/i18n/catalog";
 import { ConfirmKind, ErrorCode, type Message, type RequestId } from "@/protocol";
-import { activateTab, closePane, closeTab, newTab, renameTab } from "@/session/actions";
+import { closePane, closeTab, newTab, renameTab } from "@/session/actions";
 import { CONFIRM_TIMEOUT_MS } from "@/session/confirm";
 import { NEW_TAB_APPEAR_TIMEOUT_MS } from "@/session/requests";
 import { type SessionStore, createSessionStore } from "@/session/sessionStore";
@@ -389,19 +389,6 @@ describe("SessionOverlays: notices", () => {
     const done = await send(r, (rid) => renameTab(rid, 2, "y"));
     await fromHost(r, { type: "action-result", id: done });
 
-    expect(toast(r)).toBeNull();
-  });
-
-  it("shows nothing when an activate-tab fails or is lost with the session", async () => {
-    const r = await rig();
-    const failed = await send(r, (rid) => activateTab(rid, 2));
-    await fromHost(r, { type: "action-result", id: failed, error: ErrorCode.unknownTab });
-    expect(toast(r)).toBeNull();
-
-    await send(r, (rid) => activateTab(rid, 2));
-    await act(async () => {
-      r.h.network.last().drop();
-    });
     expect(toast(r)).toBeNull();
   });
 

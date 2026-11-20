@@ -35,6 +35,7 @@ import {
   type PaneId,
   type RandomSource,
   type StaticKeypair,
+  type TabId,
 } from "../../src/protocol/index.ts";
 import type { MemoryRelay } from "../../src/protocol/testing.ts";
 import {
@@ -44,6 +45,7 @@ import {
   buildTheme,
   buildWorkspace,
   collectPanes,
+  collectTabs,
   emptySnapshot,
 } from "./scenario.ts";
 
@@ -88,6 +90,12 @@ export interface ScenarioHost {
   tick(nowMs: number): void;
   /** Sends a `bell` on the live pane to every client subscribed to it. */
   ringBell(): void;
+  /**
+   * The tab each connected client last said it shows (`view-tab`, spec 03
+   * §4.4), `null` for a client that shows none. Only that is kept: the
+   * workspace never changes because of it.
+   */
+  viewedTabs(): (TabId | null)[];
   /** Number of client channels that finished the handshake. */
   openChannels(): number;
   /** Says goodbye (`host-quitting`) to every client and leaves the relay. */
@@ -107,6 +115,8 @@ interface Subscription {
 interface ChannelState {
   readonly channel: HostChannel;
   readonly subscriptions: Map<PaneId, Subscription>;
+  /** The state of `view-tab`: one per session, it starts `null`. */
+  viewedTab: TabId | null;
 }
 
 export function createScenarioHost(options: ScenarioHostOptions): ScenarioHost {
@@ -120,6 +130,7 @@ export function createScenarioHost(options: ScenarioHostOptions): ScenarioHost {
 
   const workspace = buildWorkspace();
   const panes = collectPanes(workspace);
+  const tabs = collectTabs(workspace);
   const live = new LivePane();
   const channels = new Map<number, ChannelState>();
   const paired: Uint8Array[] = [];
@@ -264,6 +275,15 @@ export function createScenarioHost(options: ScenarioHostOptions): ScenarioHost {
       case "paste":
         onInput(number, state, message);
         return;
+      case "view-tab":
+        // Not an action, and no success reply; an unknown tab is an error and clears the state.
+        if (message.tab === null || tabs.has(message.tab)) {
+          state.viewedTab = message.tab;
+        } else {
+          state.viewedTab = null;
+          reply(number, state, { type: "error", code: ErrorCode.unknownTab });
+        }
+        return;
       case "action":
         reply(number, state, { type: "action-result", id: message.id, error: ErrorCode.unsupported });
         return;
@@ -322,6 +342,7 @@ export function createScenarioHost(options: ScenarioHostOptions): ScenarioHost {
         channels.set(envelope.channel, {
           channel: new HostChannel(key, id, now(), channelOptions),
           subscriptions: new Map(),
+          viewedTab: null,
         });
         break;
       }
@@ -400,6 +421,9 @@ export function createScenarioHost(options: ScenarioHostOptions): ScenarioHost {
           reply(number, state, { type: "bell", pane: LIVE_PANE });
         }
       }
+    },
+    viewedTabs() {
+      return [...channels.values()].filter((state) => state.channel.isOpen).map((state) => state.viewedTab);
     },
     openChannels() {
       let count = 0;

@@ -375,6 +375,29 @@ describe("scrollback, input, actions and bell", () => {
     expect(client.ofType("action-result")).toEqual([{ type: "action-result", id: 4, error: ErrorCode.unsupported }]);
   });
 
+  it("keeps the tab a client shows (view-tab), with no reply and no change to the workspace", () => {
+    const w = world();
+    const client = ready(w);
+    const before = client.ofType("workspace");
+    expect(w.host.viewedTabs()).toEqual([null]);
+    client.send({ type: "view-tab", tab: 2 });
+    expect(w.host.viewedTabs()).toEqual([2]);
+    client.send({ type: "view-tab", tab: null });
+    expect(w.host.viewedTabs()).toEqual([null]);
+    expect(client.ofType("action-result")).toEqual([]);
+    expect(client.ofType("error")).toEqual([]);
+    expect(client.ofType("workspace")).toEqual(before);
+  });
+
+  it("answers a view-tab for an unknown tab with unknown-tab and clears the state", () => {
+    const w = world();
+    const client = ready(w);
+    client.send({ type: "view-tab", tab: 2 });
+    client.send({ type: "view-tab", tab: 4_000_000 });
+    expect(client.ofType("error")).toEqual([{ type: "error", code: ErrorCode.unknownTab }]);
+    expect(w.host.viewedTabs()).toEqual([null]);
+  });
+
   it("rings the bell only for clients subscribed to the live pane", () => {
     const w = world();
     const watching = ready(w);

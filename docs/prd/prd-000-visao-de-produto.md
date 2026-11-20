@@ -39,6 +39,8 @@ Três apostas:
 
    > **Revisão (2026-11-17, especificação 0.4):** a versão aprovada dizia "não rouba o foco". O dono decidiu que o celular pode mudar a aba ativa do desktop ([ADR-0010 do protocolo](https://github.com/porecatu/protocol/blob/main/docs/adr/0010-aba-ativa-pelo-cliente.md)); o painel focado e a janela do sistema operacional continuam fora do alcance do app ([PRD-002](prd-002-navegacao-do-workspace.md), [PRD-003](prd-003-terminal.md) RF-3.26, [PRD-004](prd-004-gestao-de-abas.md)).
 
+   > **Revisão (2026-11-20, especificação 0.5, implementada no mesmo dia):** o dono desfez a decisão de 2026-11-17 ([ADR-0011 do protocolo](https://github.com/porecatu/protocol/blob/main/docs/adr/0011-cliente-nao-muda-a-aba-ativa-e-view-tab.md), [ADR-0012](../adr/0012-abrir-aba-nao-muda-o-desktop.md)). O app **nunca** muda a aba ativa do desktop: `activate-tab` saiu do protocolo e as ações não ativam mais. Ao exibir uma aba no terminal, o app manda `view-tab`, e o desktop só marca a aba como vista na barra, sem mudar nada. Vale de novo o "não rouba o foco" da versão aprovada.
+
 ## Usuário-alvo
 
 O usuário do Porecatu que deixa processos longos rodando e quer acompanhá-los e intervir de longe: do sofá, de outra sala, da rua. Tem (ou o time tem) um servidor onde rodar o relay.
@@ -48,7 +50,7 @@ O usuário do Porecatu que deixa processos longos rodando e quer acompanhá-los 
 ## Princípios
 
 1. **O desktop é a fonte da verdade.** O app não guarda estado de workspace; tudo que mostra veio do desktop há instantes.
-2. **Nada do que o app faz surpreende quem está no desktop.** Sem redimensionar, sem mudar o painel focado nem levantar a janela do sistema, e com um indicador visível no Porecatu enquanto o celular está conectado. A troca de aba ativa que o app faz é a mesma do gesto local (especificação 0.4, revisão acima).
+2. **Nada do que o app faz surpreende quem está no desktop.** Sem redimensionar, sem mudar o painel focado nem levantar a janela do sistema, e com um indicador visível no Porecatu enquanto o celular está conectado. A troca de aba ativa que o app faz é a mesma do gesto local (especificação 0.4, revisão acima). *(Desde a especificação 0.5, o app não troca mais a aba ativa: revisão de 2026-11-20 acima.)*
 3. **Ver é barato, agir é deliberado.** Navegar e acompanhar é imediato; fechar uma aba com processo rodando pede confirmação, como no desktop.
 4. **Nunca vazar.** Nada de conteúdo de terminal em log, em notificação, em captura do seletor de apps do sistema.
 5. **Offline é um estado normal**, não um erro: o desktop desligado ou o Porecatu fechado aparecem como tal.

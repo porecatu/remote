@@ -39,7 +39,6 @@ import {
   type WorkspaceMessage,
 } from "@/protocol";
 import {
-  activateTab,
   closePane,
   closeTab,
   collapseGroup,
@@ -398,7 +397,7 @@ describe("against a real Porecatu and relay", () => {
     record("theme, profiles and workspace", true, `${state.profiles?.list.length} profiles, default ${powershell ? "PowerShell" : "other shell"}`);
   });
 
-  test("terminal: subscribes, activates the tab, live grid, input and paste", async () => {
+  test("terminal: subscribes, shows the tab, live grid, input and paste", async () => {
     const principal = tabByTitle("Principal");
     expect(principal).toBeDefined();
     const terminal = openTerminal(principal?.tab.tab ?? 0);
@@ -453,18 +452,29 @@ describe("against a real Porecatu and relay", () => {
     terminal.close();
   });
 
-  test("actions: activate-tab and start-pane start a not-started tab", async () => {
+  test("opening a tab does not change the active one; start-pane starts a not-started tab", async () => {
     const solta = tabByTitle("Solta");
     expect(solta?.tab.layout).toMatchObject({ state: PaneState.notStarted });
-    await actOk((id) => activateTab(id, solta?.tab.tab ?? 0), "activate-tab");
-    await waitFor(() => windowOf(solta?.window ?? 0)?.active === solta?.tab.tab, "active tab");
+    const activeBefore = windowOf(solta?.window ?? 0)?.active;
+    expect(activeBefore).not.toBe(solta?.tab.tab);
+    // The app shows the tab (`view-tab`): the desktop only marks it, the `workspace` that follows keeps `active`.
+    const viewing = openTerminal(solta?.tab.tab ?? 0);
+    await waitFor(() => viewing.getState().paneId !== null, "the terminal to pick the pane");
+    await pause(800);
+    expect(windowOf(solta?.window ?? 0)?.active).toBe(activeBefore);
+    const soltaPane = solta === undefined ? 0 : (panesOf(solta.tab.layout)[0]?.pane ?? 0);
+    await actOk((id) => startPane(id, soltaPane), "start-pane (tab being shown)");
     await waitFor(() => (tabByTitle("Solta")?.tab.layout as Pane | undefined)?.state === PaneState.running, "the tab to start");
+    expect(windowOf(solta?.window ?? 0)?.active).toBe(activeBefore);
+    viewing.close();
+    record("opening a tab does not change the active tab of the desktop", windowOf(solta?.window ?? 0)?.active === activeBefore);
 
     const outra = tabByTitle("Outra solta");
+    const outraActive = windowOf(outra?.window ?? 0)?.active;
     const pane = outra === undefined ? 0 : (panesOf(outra.tab.layout)[0]?.pane ?? 0);
     await actOk((id) => startPane(id, pane), "start-pane");
     await waitFor(() => (tabByTitle("Outra solta")?.tab.layout as Pane | undefined)?.state === PaneState.running, "pane running");
-    expect(windowOf(outra?.window ?? 0)?.active).toBe(outra?.tab.tab);
+    expect(windowOf(outra?.window ?? 0)?.active).toBe(outraActive);
     await actFails((id) => startPane(id, pane), "start-pane on a running pane: invalid-argument", ErrorCode.invalidArgument);
   });
 
@@ -475,10 +485,12 @@ describe("against a real Porecatu and relay", () => {
     await waitFor(() => tabById(tabId)?.tab.title === "Renomeada" && tabById(tabId)?.tab.custom, "new title");
 
     const window = principal?.window ?? 0;
+    const activeBeforeNewTab = windowOf(window)?.active;
     const created = await actOk((id) => newTab(id, window), "new-tab");
     const newId = created.status === "created-tab" || created.status === "waiting-tab" ? created.tab : 0;
     await waitFor(() => tabById(newId), "the new tab in the workspace");
-    expect(windowOf(window)?.active).toBe(newId);
+    // No remote action activates a tab (spec 0.5): the new tab is born inactive.
+    expect(windowOf(window)?.active).toBe(activeBeforeNewTab);
 
     const build = groupByName("Build");
     const inGroup = await actOk((id) => newTab(id, window, { group: build?.group.group ?? 0 }), "new-tab in a group");
@@ -520,13 +532,11 @@ describe("against a real Porecatu and relay", () => {
     const moved = created.status === "created-tab" || created.status === "waiting-tab" ? created.tab : 0;
     await waitFor(() => tabById(moved), "the tab to move");
 
+    const targetActive = windowOf(target?.id ?? 0)?.active;
     await actOk((id) => moveTabToWindow(id, moved, target?.id ?? 0), "move-tab-to-window");
     await waitFor(() => tabById(moved)?.window === target?.id, "the tab in the other window");
-    expect(windowOf(target?.id ?? 0)?.active).toBe(moved);
+    expect(windowOf(target?.id ?? 0)?.active).toBe(targetActive);
     await actFails((id) => moveTabToWindow(id, moved, target?.id ?? 0), "move-tab-to-window to its own window: invalid-argument", ErrorCode.invalidArgument);
-
-    const back = places(ws()).find((p) => p.window === target?.id && p.tab.tab !== moved && !p.pinned);
-    await actOk((id) => activateTab(id, back?.tab.tab ?? 0), "activate-tab in the window behind");
 
     const build = groupByName("Build");
     const other = ws().windows.find((w) => w.id !== build?.window);
@@ -587,7 +597,24 @@ describe("against a real Porecatu and relay", () => {
   });
 
   test("actions: errors come back as codes", async () => {
-    await actFails((id) => activateTab(id, 4_000_000), "activate-tab unknown: unknown-tab", ErrorCode.unknownTab);
+    // `view-tab` is not an action: an unknown tab answers with an `error` that has no request id.
+    const refused = new Promise<boolean>((resolve) => {
+      const timer = setTimeout(() => {
+        off();
+        resolve(false);
+      }, 5_000);
+      const off = session.onMessage((message) => {
+        if (message.type === "error" && message.code === ErrorCode.unknownTab && message.id === undefined) {
+          clearTimeout(timer);
+          off();
+          resolve(true);
+        }
+      });
+    });
+    expect(session.send({ type: "view-tab", tab: 4_000_000 })).toBe(true);
+    const gotUnknownTab = await refused;
+    record("view-tab unknown: unknown-tab", gotUnknownTab);
+    expect(gotUnknownTab).toBe(true);
     const window = ws().windows[0]?.id ?? 0;
     await actFails((id) => newTab(id, window, { profile: "no-such-profile" }), "new-tab unknown profile: unknown-profile", ErrorCode.unknownProfile);
     const build = groupByName("Build");

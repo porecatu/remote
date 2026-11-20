@@ -8,8 +8,8 @@ primeira versão publicada nas lojas.
 
 Implementação inicial: a camada de lógica (2026-11-16) e as telas dos PRDs 001
 a 004 (2026-11-17), conforme a [anatomia das telas](docs/design/proposta-de-anatomia.md)
-aprovada. O app segue a **especificação 0.4** do protocolo. Tudo o que entrou é
-verificado por teste automatizado em Node (`pnpm test`: 1632 testes em 128
+aprovada. O app segue a **especificação 0.5** do protocolo. Tudo o que entrou é
+verificado por teste automatizado em Node (`pnpm test`: 1634 testes em 128
 suítes, com `jest-expo` e `@testing-library/react-native`); **nada foi rodado
 num aparelho**, e o [ADR-0002](docs/adr/0002-render-da-grade-com-skia.md) segue
 Proposto até a medição do render em aparelho. Dívida de verificação no
@@ -146,6 +146,14 @@ Proposto até a medição do render em aparelho. Dívida de verificação no
   que imitam o atraso (`deferredBox`). **Falta confirmar em aparelho.**
 
 ### Mudado
+
+- **Especificação 0.5 do protocolo: abrir uma aba não muda o desktop**
+  ([ADR-0012](docs/adr/0012-abrir-aba-nao-muda-o-desktop.md), 2026-11-20). O app
+  não manda mais `activate-tab` (que saiu do protocolo) e, ao exibir uma aba no
+  terminal, manda `view-tab { tab }`, de novo a cada sessão nova, e
+  `view-tab { tab: null }` ao fechar a tela; o desktop só marca a aba como vista.
+  Sai a ação de fundo (`isBackgroundAction`). O desktop falso aceita `view-tab`.
+  Tarball do protocolo regerado do commit `4ce7e4f`.
 
 - **Ícone adaptativo do Android 25% menor**: as camadas `adaptive-foreground.png`
   e `adaptive-monochrome.png` (1024×1024) passam a ter a arte a 75% do tamanho,

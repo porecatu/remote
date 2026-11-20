@@ -137,7 +137,7 @@ PRD-000 a 004, ADR-0001 a 0007, arquitetura, CLAUDE.md, verificação de links.
 
 **Critério de saída:** cada ação do PRD-004 exercitada contra um Porecatu real, conferindo no desktop que o resultado é o do gesto local e que só a aba ativa dentro da janela muda, como no gesto local; a janela do sistema e o painel focado não ([especificação 0.4](https://github.com/porecatu/protocol/blob/main/docs/adr/0010-aba-ativa-pelo-cliente.md)). Abrir uma aba no terminal do app também a ativa no desktop (`activate-tab`).
 
-**Lógica entregue (2026-11-16), sem telas:** as ações da spec (`src/session/actions.ts`; 14 desde a especificação 0.4, com `activate-tab`, que é ação de fundo e não marca item como pendente); pedidos pendentes por item, espera da aba criada aparecer no `workspace` e classificação dos erros, inclusive `last-tab` (RF-4.11) (`src/session/requests.ts`); confirmações com prazo de 60 s (`src/session/confirm.ts`). O desktop falso responde `unsupported` a toda ação; o efeito das ações foi visto contra o Porecatu real (abaixo).
+**Lógica entregue (2026-11-16), sem telas:** as ações da spec (`src/session/actions.ts`; 14 desde a especificação 0.4, com `activate-tab` — 13 desde a 0.5, que a tirou —, que era ação de fundo e não marcava item como pendente); pedidos pendentes por item, espera da aba criada aparecer no `workspace` e classificação dos erros, inclusive `last-tab` (RF-4.11) (`src/session/requests.ts`); confirmações com prazo de 60 s (`src/session/confirm.ts`). O desktop falso responde `unsupported` a toda ação; o efeito das ações foi visto contra o Porecatu real (abaixo).
 
 **Telas entregues (2026-11-17), verificadas só em Node:** menus da aba e do grupo (`ui/sheets/menus/`), Nova aba com perfil (`ui/sheets/NewTabSheet.tsx`), folhas de renomear, mover para grupo e para janela, novo grupo e cor do grupo (`ui/sheets/forms/`), a confirmação de fechamento pedida pelo desktop com prazo de 60 s e os avisos de falha por código (`ui/session/`). Fechar uma aba fixada manda a ação direto: a única confirmação é a do desktop, que diz que a aba será desafixada.
 
@@ -156,6 +156,18 @@ Android e iOS no **mesmo marco** (o Expo constrói os dois).
 **Critério de saída:** a mesma versão aprovada nas duas lojas, ou o motivo de recusa registrado aqui com a decisão tomada.
 
 ---
+
+## Especificação 0.5: abrir uma aba não muda o desktop (ADR-0012) — implementada em 2026-11-20
+
+Pedido do dono em 2026-11-20: abrir uma aba no app trocava a aba ativa do desktop, e isso foi desfeito por inteiro, junto com a ativação nas ações ([ADR-0011 do protocolo](https://github.com/porecatu/protocol/blob/main/docs/adr/0011-cliente-nao-muda-a-aba-ativa-e-view-tab.md); no Porecatu, [ADR-0111](https://github.com/porecatu/terminal/blob/main/docs/adr/0111-o-celular-nao-muda-a-aba-ativa-do-desktop.md) e [ADR-0112](https://github.com/porecatu/terminal/blob/main/docs/adr/0112-indicador-de-aba-vista-pelo-celular.md)). Decisão neste repositório: [ADR-0012](adr/0012-abrir-aba-nao-muda-o-desktop.md). **Implementado em 2026-11-20**, verificado por teste automatizado em Node (`pnpm test`: 1634 testes em 128 suítes; `pnpm typecheck` e `pnpm lint` limpos). Itens 1 a 3 e 5 feitos; do item 4, o desktop falso aceita `view-tab`, e o `pnpm real-host` foi reescrito mas **não rodou** contra um Porecatu 0.5.
+
+1. **Pacote do protocolo na 0.5** (pré-requisito externo): `vendor/porecatu-protocol-*.tgz` regerado do commit da 0.5 ([ADR-0004](adr/0004-criptografia-em-js-puro.md)), com `view-tab` e sem `activate-tab`.
+2. **Sem ativação**: sai `activateOnce` de `src/controllers/terminalSession.ts`, sai `activateTab` de `src/session/actions.ts`, e `isBackgroundAction`, `targetsOf` e `failure.silent` (`src/session/requests.ts`) saem se não restar outra ação de fundo. Os testes de `describe("terminal session: activate-tab")` viram os de `view-tab`.
+3. **`view-tab`**: em todo `ready` com a aba na árvore (inclusive depois de reconectar), `null` no `close()`, nada no `selectPane()`, `unknown-tab` ignorado.
+4. **`pnpm real-host` e `pnpm fake-host`**: o desktop falso aceita `view-tab`; contra o Porecatu real, abrir uma aba não muda o `active` do `workspace` seguinte, e `new-tab`, expandir grupo e mover para janela também não.
+5. **Docs de fechamento**: as revisões de 2026-11-20 nos PRDs 000, 002, 003 e 004, na anatomia e na arquitetura deixam de dizer "implementação pendente"; CHANGELOG e CLAUDE.md.
+
+**Verificação prevista:** além da dívida de aparelho de sempre, conferir no desktop real o ícone de aba vista aparecendo ao abrir a aba no app, sumindo ao sair da tela e voltando depois de uma reconexão.
 
 ## Dívida de verificação prevista
 

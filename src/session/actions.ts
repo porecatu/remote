@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Builders of the 14 actions of spec 03 §7 (PRD-004). Each one returns the
+// Builders of the 13 actions of spec 03 §7 (PRD-004). Each one returns the
 // `ClientMessage` of type `action` with the request id the caller allocated;
 // nothing here touches the network or a clock. `targetsOf` tells which items
 // an action affects, so the tracker can mark them "in progress" (RF-4.9).
@@ -117,30 +117,9 @@ export function startPane(id: RequestId, pane: PaneId): Action {
 }
 
 /**
- * `activate-tab` (spec 0.4): makes the tab the active one in its own window.
- * The host never raises the OS window nor changes the focused pane.
- */
-export function activateTab(id: RequestId, tab: TabId): Action {
-  return wrap(id, { type: "activate-tab", tab });
-}
-
-/**
- * An action the app sends by itself, as a side effect of navigating, not on
- * a request of the user (`activate-tab` when a tab opens in the terminal).
- * Nothing about it reaches the screen: its failure and its loss when the
- * session drops are silent, and it marks no item as pending.
- */
-export function isBackgroundAction(body: ActionBody): boolean {
-  return body.type === "activate-tab";
-}
-
-/**
  * The items an action affects, which show a pending indicator and refuse
  * another action until the `action-result` (RF-4.9). `new-tab` marks the group
  * when there is one, the window otherwise; moves mark only the moved item.
- * `activate-tab` marks nothing: activation is a side effect of navigating,
- * not a user action on the tab, so it neither shows as pending nor blocks
- * other actions on it.
  */
 export function targetsOf(body: ActionBody): readonly ItemRef[] {
   switch (body.type) {
@@ -164,7 +143,5 @@ export function targetsOf(body: ActionBody): readonly ItemRef[] {
     case "move-group-to-window":
     case "ungroup":
       return [{ kind: "group", id: body.group }];
-    case "activate-tab":
-      return [];
   }
 }

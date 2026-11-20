@@ -15,6 +15,7 @@
 | [0009](0009-iosevka-fixed-embutida.md) | Iosevka Fixed embutida, com as faces recortadas do desktop | Aceito |
 | [0010](0010-gestos-animacao-e-teclado.md) | Gestos, animação e teclado: Gesture Handler, Reanimated e Keyboard Controller | Aceito |
 | [0011](0011-folhas-dialogos-e-avisos-proprios.md) | Folhas, diálogos e avisos próprios, desenhados dentro da janela do app | Aceito |
+| [0012](0012-abrir-aba-nao-muda-o-desktop.md) | Abrir uma aba não muda o desktop; o app informa a aba que exibe (`view-tab`) | Aceito — implementado |
 
 ## Convenção
 

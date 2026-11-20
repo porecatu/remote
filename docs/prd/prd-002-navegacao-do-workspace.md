@@ -16,6 +16,8 @@ O desktop tem várias janelas, cada uma com abas fixadas, grupos coloridos (às 
 
   > **Revisão (2026-11-17, especificação 0.4):** a versão aprovada dizia que o app nunca muda o foco nem a aba ativa do desktop. A decisão do dono de 2026-11-17 a substitui; o painel focado e a janela do sistema continuam intocados.
 
+  > **Revisão (2026-11-20, especificação 0.5, implementada no mesmo dia):** o dono desfez a decisão de 2026-11-17 ([ADR-0011 do protocolo](https://github.com/porecatu/protocol/blob/main/docs/adr/0011-cliente-nao-muda-a-aba-ativa-e-view-tab.md), [ADR-0012](../adr/0012-abrir-aba-nao-muda-o-desktop.md)). O app **nunca** muda a aba ativa do desktop: `activate-tab` saiu do protocolo e as ações não ativam mais. Ao exibir uma aba no terminal, o app manda `view-tab`, e o desktop só marca a aba como vista na barra, sem mudar nada. Vale de novo a versão aprovada.
+
 ## Requisitos
 
 ### Sessão
@@ -67,7 +69,7 @@ Ficam para o aparelho: as transições de 150 ms, a âncora da rolagem com a ár
 
 ## Fora de escopo
 
-- Mudar o painel focado de uma aba ou dar foco a uma janela do sistema do desktop (a aba ativa muda desde a especificação 0.4; ver acima).
+- Mudar o painel focado de uma aba ou dar foco a uma janela do sistema do desktop (a aba ativa mudou só na especificação 0.4; desde a 0.5 também fica fora, ver acima).
 - Reordenar abas por arraste (o v1 move por menu, [PRD-004](prd-004-gestao-de-abas.md)).
 - Mostrar o gerenciador de tarefas ou a barra de status do desktop.
 

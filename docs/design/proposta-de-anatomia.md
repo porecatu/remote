@@ -751,6 +751,8 @@ Todas voltam à lista ao fechar, com o desktop já marcado.
 
 **Aba ativa no desktop** ([PRD-003](../prd/prd-003-terminal.md) RF-3.26, especificação 0.4). Abrir a aba no terminal a ativa no desktop (`activate-tab`): o computador passa a mostrar a mesma aba. Não há nada na tela para isso: o envio é automático, uma vez por abertura, e a falha é silenciosa (nenhum aviso, nenhuma pendência). O painel focado no desktop e a janela do sistema não mudam.
 
+> **Revisão (2026-11-20, especificação 0.5, implementada no mesmo dia):** abrir a aba **não** a ativa mais no desktop ([ADR-0012](../adr/0012-abrir-aba-nao-muda-o-desktop.md)). O app manda `view-tab`, e o desktop só marca a aba com o ícone de celular na barra. Continua sem nada na tela do app: o envio é automático e não tem falha visível.
+
 ### 4.7 Terminal: grade, zoom e rolagem (RF-3.4 a RF-3.13)
 
 **Tamanho (RF-3.6, RF-3.7).** O tamanho em colunas × linhas é sempre o do desktop. Como a Iosevka Fixed avança 0,5 em, a fonte que faz as `cols` colunas caberem na largura L é `2·L / cols`. O padrão ao abrir é **"caber a largura"** quando essa fonte é ≥ 8 pt; senão, o **tamanho de leitura** (12 pt, proposta) com rolagem horizontal. Em 360 de largura, 8 pt é o limite de **90 colunas**; 80 colunas dão 9 pt; 120 colunas (6 pt) abrem em leitura.
@@ -918,7 +920,7 @@ Título: nome do grupo. Itens: **Renomear** (`pencil`, §4.12.3), **Cor** (`pale
 
 - **Desfazer grupo** pede diálogo no app (RF-4.8): título "Desfazer o grupo Servidores?"; corpo "As 3 abas continuam abertas, mas ficam soltas na trilha. Esta ação é difícil de reverter."; **Cancelar** e **Desfazer grupo** (destrutivo).
 - "Fechar grupo" **não existe** na v1 (não há `close-group` no protocolo).
-- **Expandir no desktop** faz o que o gesto local faz, inclusive a aba que o desktop ativa ao expandir (especificação 0.4).
+- **Expandir no desktop** faz o que o gesto local faz, inclusive a aba que o desktop ativa ao expandir (especificação 0.4). *Desde a 0.5, expandir não ativa nada no desktop ([ADR-0012](../adr/0012-abrir-aba-nao-muda-o-desktop.md)).*
 
 #### 4.12.3 Renomear
 
@@ -949,7 +951,7 @@ Aberta pelas linhas "Nova aba" da árvore (janela ou grupo). Folha com:
 - **Lista de perfis** de escolha única (linhas de 56): nome, tipo (chip `local`, `ssh`, `wsl`, `outro`) e, no padrão, a marca "Padrão". O padrão vem **primeiro** e já selecionado (RF-4.1). Sem a lista de perfis (ainda não chegou `profiles`), a folha mostra spinner.
 - Botão primário **Criar aba** (fixo no fim da folha).
 
-Depois de tocar em **Criar aba** o botão vira spinner até o `action-result`. Com `created`, o app **abre a aba nova no terminal** do app (RF-4.1). No desktop a aba criada já nasce **ativa** na janela dela, como no `tab.new` (especificação 0.4); o painel focado e a janela do sistema não mudam. Aba SSH nova aparece normalmente `connecting` ou `awaiting-desktop` (§4.10). Erro: o próprio `action-result` vira o aviso do §4.14 e a folha fecha.
+Depois de tocar em **Criar aba** o botão vira spinner até o `action-result`. Com `created`, o app **abre a aba nova no terminal** do app (RF-4.1). No desktop a aba criada já nasce **ativa** na janela dela, como no `tab.new` (especificação 0.4); o painel focado e a janela do sistema não mudam. *Desde a 0.5 ([ADR-0012](../adr/0012-abrir-aba-nao-muda-o-desktop.md)), ela nasce sem ativar, e o desktop a marca como vista quando o app a abre.* Aba SSH nova aparece normalmente `connecting` ou `awaiting-desktop` (§4.10). Erro: o próprio `action-result` vira o aviso do §4.14 e a folha fecha.
 
 #### 4.12.9 Acessibilidade das folhas
 

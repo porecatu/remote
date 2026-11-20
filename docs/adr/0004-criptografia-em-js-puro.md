@@ -20,6 +20,8 @@ O app poderia reimplementar partes (é tentador escrever "só o CBOR" ou "só o 
 >
 > **Nota de implementação (2026-11-17):** o tarball foi **regerado** para a especificação 0.4 do protocolo ([ADR-0010 do protocolo](https://github.com/porecatu/protocol/blob/main/docs/adr/0010-aba-ativa-pelo-cliente.md)), a partir do commit `f3715bb` do repositório do protocolo, para trazer a ação `activate-tab`. É o **mesmo nome de arquivo** (`vendor/porecatu-protocol-0.1.0.tgz`) e a **mesma versão do pacote** (0.1.0): só mudaram o construtor de ações, os códigos e os tipos das mensagens, e o fio continua `[0, 1]`. A troca aparece só na integridade nova do `pnpm-lock.yaml`. Continua valendo o item 1: o app não escreveu codificação nenhuma para a ação nova, só a monta pelos tipos do pacote (`src/session/actions.ts`).
 
+> **Nota de implementação (2026-11-20):** regerado de novo, para a especificação 0.5 ([ADR-0011 do protocolo](https://github.com/porecatu/protocol/blob/main/docs/adr/0011-cliente-nao-muda-a-aba-ativa-e-view-tab.md)), a partir do commit `4ce7e4f` da `main` do protocolo: entra a mensagem `view-tab`, sai a ação `activate-tab`. Mesmo nome de arquivo e mesma versão do pacote; a troca aparece só na integridade do `pnpm-lock.yaml`.
+
 1. **Nenhuma codificação ou criptografia escrita no app.** O app chama o cliente do pacote (conectar, parear, mandar, receber) e trata mensagens tipadas.
 2. **JS puro** porque roda igual no Hermes dos dois sistemas, no Node dos testes e no CI, sem *prebuild* nem compilação nativa, e porque as bibliotecas `@noble` são auditadas e sem dependências.
 3. **Aleatoriedade** vem de `crypto.getRandomValues`, fornecido no Hermes por `expo-crypto` (polyfill oficial); o app instala o polyfill na entrada, antes de qualquer import do pacote.

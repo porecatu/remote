@@ -8,6 +8,7 @@ Este diretório guarda a especificação visual do app: os tokens (cores, tipogr
 
 - **Implementada.** Todas as telas da anatomia existem no código (`app/` e `ui/`, com os tokens em `ui/theme/`), cobertas por testes automatizados em Node; **nenhuma foi vista num aparelho**, e a conferência visual em aparelho é dívida de verificação do [roadmap](../roadmap.md).
 - **Revisada pela especificação 0.4 do protocolo** ([ADR-0010 do protocolo](https://github.com/porecatu/protocol/blob/main/docs/adr/0010-aba-ativa-pelo-cliente.md)), com o aval do dono: abrir uma aba no app a ativa no desktop, o painel focado nunca muda, e o diálogo próprio de fechar aba fixada saiu (a nota de desafixar está no diálogo de confirmação do desktop). As mudanças estão marcadas no texto com a data.
+- **Revisada pela especificação 0.5** ([ADR-0012](../adr/0012-abrir-aba-nao-muda-o-desktop.md), 2026-11-20, implementada no mesmo dia): abrir uma aba no app **não** a ativa mais no desktop; o app manda `view-tab` e o desktop só marca a aba. Nenhuma tela do app muda.
 - **Escolhas a confirmar.** Onde a anatomia não fixava um valor ou um comportamento, o código escolheu um, e cada escolha está no §9.2 da anatomia, por tela, à espera do aval do dono; o §2.10 lista os valores que o código usa sem token. O que ele aprovar entra no corpo da anatomia; o que recusar volta ao código.
 
 Regras:

@@ -583,48 +583,76 @@ describe("terminal session: the tree and the connection", () => {
   });
 });
 
-describe("terminal session: activate-tab", () => {
-  const ACTIVATE = { type: "action", id: expect.any(Number), do: { type: "activate-tab", tab: 1 } };
+describe("terminal session: view-tab", () => {
+  const VIEW = { type: "view-tab", tab: 1 };
+  const NONE = { type: "view-tab", tab: null };
 
-  it("makes the tab the active one on the desktop when it opens with the session ready", () => {
-    const r = rig({ active: 2 });
-    expect(received(r, "action")).toEqual([ACTIVATE]);
-    // A background action: nothing on the tree shows it as pending.
-    expect(r.session.getState().requests.pending.size).toBe(1);
-    expect([...r.session.getState().requests.pending.values()][0]?.targets).toEqual([]);
+  it("tells the desktop the tab on screen when it opens with the session ready", () => {
+    const r = rig();
+    expect(received(r, "view-tab")).toEqual([VIEW]);
+    // Not an action: no request id, nothing pending, nothing shown.
+    expect(received(r, "action")).toEqual([]);
+    expect(r.session.getState().requests.pending.size).toBe(0);
     expect(r.events).toEqual([]);
   });
 
-  it("sends nothing when the tab already is the active one of its window", () => {
-    const r = rig();
+  it("reports the tab whether or not it is the active one of its window", () => {
+    expect(received(rig({ active: 2 }), "view-tab")).toEqual([VIEW]);
+    expect(received(rig({ active: 1 }), "view-tab")).toEqual([VIEW]);
+  });
+
+  it("never sends an activate-tab nor any action", () => {
+    const r = rig({ active: 2 });
+    r.terminal.selectPane(101);
+    r.terminal.close();
     expect(received(r, "action")).toEqual([]);
   });
 
   it("waits for ready when the screen opened during a reconnection", () => {
-    const r = rig({ active: 2, open: false });
+    const r = rig({ open: false });
     r.h.network.last().drop();
     expect(r.session.getState().connection.state).toBe("reconnecting");
     r.terminal.open();
     r.h.time.advance(1000);
-    expect(received(r, "action")).toEqual([]);
+    expect(received(r, "view-tab")).toEqual([]);
     r.h.network.last().open();
     expect(r.session.getState().connection.state).toBe("ready");
-    expect(received(r, "action")).toEqual([ACTIVATE]);
+    expect(received(r, "view-tab")).toEqual([VIEW]);
   });
 
-  it("does not send it again on a reconnection, a new tree or another pane", () => {
-    const r = rig({ active: 2 });
-    r.h.network.last().drop();
-    r.h.time.advance(1000);
-    r.h.network.last().open();
-    expect(r.session.getState().connection.state).toBe("ready");
-    r.host.broadcast(tree(2, { active: 2 }));
+  it("sends it again at every ready after a reconnection", () => {
+    const r = rig();
+    expect(received(r, "view-tab")).toEqual([VIEW]);
+    for (const round of [2, 3]) {
+      r.h.network.last().drop();
+      expect(r.session.getState().connection.state).toBe("reconnecting");
+      r.h.time.advance(30_000);
+      r.h.network.last().open();
+      expect(r.session.getState().connection.state).toBe("ready");
+      expect(received(r, "view-tab")).toEqual(Array.from({ length: round }, () => VIEW));
+    }
+  });
+
+  it("does not send it twice in the same session, on a new tree or another pane", () => {
+    const r = rig();
+    r.host.broadcast(tree(2));
+    r.host.broadcast(tree(3, { active: 2 }));
     expect(r.terminal.selectPane(101)).toBe(true);
-    expect(received(r, "action")).toEqual([ACTIVATE]);
+    expect(r.terminal.selectPane(100)).toBe(true);
+    expect(received(r, "view-tab")).toEqual([VIEW]);
   });
 
-  it("does not send it once the tab is gone", () => {
-    const r = rig({ active: 2, open: false });
+  it("sends nothing when the tab is not in the tree", () => {
+    const r = rig({ open: false });
+    r.host.broadcast(workspace([win(1, [tab(2)], { active: 2 })], 2));
+    r.terminal.open();
+    expect(r.events).toEqual([{ type: "tab-gone", reason: "closed" }]);
+    r.terminal.close();
+    expect(received(r, "view-tab")).toEqual([]);
+  });
+
+  it("does not send it to a restarted desktop, where the tab id means another thing", () => {
+    const r = rig({ open: false });
     r.host.detach();
     expect(r.session.getState().connection.state).toBe("reconnecting");
     r.terminal.open();
@@ -633,30 +661,45 @@ describe("terminal session: activate-tab", () => {
     r.h.network.last().open();
     expect(r.session.getState().connection.state).toBe("ready");
     expect(r.events).toEqual([{ type: "tab-gone", reason: "restarted" }]);
-    expect(restarted.received.filter((m) => m.type === "action")).toEqual([]);
-    expect(received(r, "action")).toEqual([]);
+    expect(restarted.received.filter((m) => m.type === "view-tab")).toEqual([]);
+    r.terminal.close();
+    expect(restarted.received.filter((m) => m.type === "view-tab")).toEqual([]);
   });
 
-  it("shows nothing when the desktop refuses it", () => {
-    const r = rig({ active: 2 });
+  it("sends view-tab null on close, before the unsubscribe", () => {
+    const r = rig();
+    r.terminal.close();
+    const sent = r.host.received.filter((m) => m.type === "view-tab" || m.type === "unsubscribe");
+    expect(sent).toEqual([VIEW, NONE, { type: "unsubscribe", pane: 100 }]);
+  });
+
+  it("sends the null once, however many times it is closed", () => {
+    const r = rig();
+    r.terminal.close();
+    r.terminal.close();
+    expect(received(r, "view-tab")).toEqual([VIEW, NONE]);
+  });
+
+  it("sends no null when the session is not ready, nor when nothing was reported", () => {
+    const dropped = rig();
+    dropped.h.network.last().drop();
+    dropped.terminal.close();
+    expect(received(dropped, "view-tab")).toEqual([VIEW]);
+
+    const opened = rig({ open: false });
+    opened.terminal.close();
+    expect(received(opened, "view-tab")).toEqual([]);
+  });
+
+  it("ignores an unknown-tab error that answers it", () => {
+    const r = rig();
     const sessionEvents: SessionEvent[] = [];
     r.session.onEvent((event) => sessionEvents.push(event));
-    const [sent] = received(r, "action");
-    expect(sent?.type).toBe("action");
-    if (sent?.type !== "action") {
-      return;
-    }
-    r.host.broadcast({ type: "action-result", id: sent.id, error: ErrorCode.unsupported });
+    r.host.broadcast({ type: "error", code: ErrorCode.unknownTab });
     expect(r.events).toEqual([]);
-    expect(sessionEvents).toEqual([
-      expect.objectContaining({
-        type: "action-outcome",
-        outcome: expect.objectContaining({
-          status: "failed",
-          failure: expect.objectContaining({ code: ErrorCode.unsupported, silent: true }),
-        }),
-      }),
-    ]);
+    expect(sessionEvents).toEqual([]);
+    expect(r.session.getState().connection.state).toBe("ready");
     expect(r.session.getState().requests.pending.size).toBe(0);
+    expect(r.terminal.getState()).toMatchObject({ status: "live", tabGone: null });
   });
 });

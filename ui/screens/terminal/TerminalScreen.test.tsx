@@ -530,24 +530,22 @@ describe("TerminalScreen — pane states", () => {
   });
 });
 
-describe("TerminalScreen — activate-tab", () => {
-  it("makes the tab the desktop's active one when it opens", async () => {
+describe("TerminalScreen — view-tab", () => {
+  it("tells the desktop the tab on screen, and changes nothing else", async () => {
     const r = await rig({ tabId: 2 });
-    expect(received(r, "action")).toEqual([
-      { type: "action", id: expect.any(Number), do: { type: "activate-tab", tab: 2 } },
-    ]);
-  });
-
-  it("sends nothing for the tab that already is the active one", async () => {
-    const r = await rig();
+    expect(received(r, "view-tab")).toEqual([{ type: "view-tab", tab: 2 }]);
     expect(received(r, "action")).toEqual([]);
   });
 
-  it("shows nothing when the desktop refuses it, nor when the session drops before the answer", async () => {
+  it("sends it for the tab that already is the active one too", async () => {
+    const r = await rig();
+    expect(received(r, "view-tab")).toEqual([{ type: "view-tab", tab: 1 }]);
+    expect(received(r, "action")).toEqual([]);
+  });
+
+  it("shows nothing when the desktop answers it with unknown-tab, nor when the session drops", async () => {
     const r = await rig({ tabId: 2 });
-    const [action] = received(r, "action");
-    const id = action?.type === "action" ? action.id : 0;
-    await fromHost(r, { type: "action-result", id, error: ErrorCode.unsupported });
+    await fromHost(r, { type: "error", code: ErrorCode.unknownTab });
     expect(r.overlays.store.getState().toast).toBeNull();
 
     const other = await rig({ tabId: 2 });

@@ -11,7 +11,7 @@
 
 import type { Action, ActionResult, ErrorCode, RequestId, TabId } from "@/protocol";
 import { ErrorCode as Codes } from "@/protocol";
-import { type ItemRef, isBackgroundAction, itemKey, targetsOf } from "./actions";
+import { type ItemRef, itemKey, targetsOf } from "./actions";
 
 /** How long a created tab may take to appear in the workspace (spec 03 §7). */
 export const NEW_TAB_APPEAR_TIMEOUT_MS = 5000;
@@ -115,8 +115,7 @@ export function trackAction(state: RequestsState, action: Action, now: number): 
 export interface ActionFailure {
   readonly code: ErrorCode;
   /**
-   * No message is shown: `cancelled` (the user declined), or any code of a
-   * background action (`isBackgroundAction`), which the user never asked for.
+   * No message is shown: `cancelled` (the user declined).
    */
   readonly silent: boolean;
   /** `unknown-*`: the tree is stale, so the caller refreshes the view. */
@@ -174,14 +173,9 @@ export function applyActionResult(
   const base: RequestsState = { pending, waiting: state.waiting };
 
   if (result.error !== undefined) {
-    const failure = classifyFailure(result.error);
     return {
       state: base,
-      outcome: {
-        status: "failed",
-        request,
-        failure: isBackgroundAction(request.action.do) ? { ...failure, silent: true } : failure,
-      },
+      outcome: { status: "failed", request, failure: classifyFailure(result.error) },
     };
   }
   if (request.action.do.type !== "new-tab" || result.created === undefined) {
@@ -257,13 +251,11 @@ export function nextWaitingDeadline(state: RequestsState): number | null {
 /**
  * The session dropped: nothing pending can be answered any more. Returns the
  * emptied state and the requests that were lost, so the UI clears the
- * indicators. Background actions (`isBackgroundAction`) are dropped without
- * being reported as lost.
+ * indicators.
  */
 export function dropAll(state: RequestsState): {
   readonly state: RequestsState;
   readonly lost: readonly PendingAction[];
 } {
-  const lost = [...state.pending.values()].filter((entry) => !isBackgroundAction(entry.action.do));
-  return { state: createRequestsState(), lost };
+  return { state: createRequestsState(), lost: [...state.pending.values()] };
 }

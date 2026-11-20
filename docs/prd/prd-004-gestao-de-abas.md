@@ -15,6 +15,8 @@ Acompanhar não basta: o usuário quer **abrir uma aba** para rodar um comando, 
 - Fechar com processo em primeiro plano ou com conexão SSH aberta gera `confirm-request` **para o celular que pediu**, respondido com `confirm`; sem resposta em 60 s, a ação expira. Fechar uma **aba fixada** (por `close-tab`, ou por `close-pane` no último painel dela) **sempre** gera `confirm-request` e a desafixa; uma fixada sem nada vivo chega com `kind = running-process` e a lista de processos vazia.
 
   > **Revisão (2026-11-17, especificação 0.4):** a versão aprovada dizia que o desktop não muda o foco por causa de uma ação remota e que a aba criada pelo celular nascia sem roubar o foco. A decisão do dono de 2026-11-17 e o ADR-0010 do protocolo a substituem; a confirmação da fixada é uma correção de texto da mesma especificação.
+
+  > **Revisão (2026-11-20, especificação 0.5, implementada no mesmo dia):** o dono desfez a decisão de 2026-11-17 ([ADR-0011 do protocolo](https://github.com/porecatu/protocol/blob/main/docs/adr/0011-cliente-nao-muda-a-aba-ativa-e-view-tab.md), [ADR-0012](../adr/0012-abrir-aba-nao-muda-o-desktop.md)). O app **nunca** muda a aba ativa do desktop: `activate-tab` saiu do protocolo e as ações não ativam mais. Ao exibir uma aba no terminal, o app manda `view-tab`, e o desktop só marca a aba como vista na barra, sem mudar nada. `new-tab` cria a aba sem ativar, expandir grupo e mover para janela não ativam, e `start-pane` não ativa a aba do painel; só a remoção da aba ativa (fechar, mover, colapsar o grupo dela) a move, pela regra do desktop. A confirmação da fixada continua.
 - O app atualiza a árvore pelo `workspace` que vem depois da ação, **não** por conta própria: o resultado visível é sempre o estado do desktop.
 
 ## Requisitos
@@ -63,17 +65,18 @@ Decisões tomadas na implementação:
 - **Aba fixada:** sem diálogo próprio (revisão do RF-4.6); a nota de desafixar fica no diálogo do desktop, a `dialog.gap` do motivo.
 - **Desktop reiniciado:** as folhas e os diálogos da sessão fecham, porque os ids antigos mudam de sentido.
 - **Ativação (especificação 0.4):** as ações não pedem `activate-tab`; quem ativa é o desktop, ao seguir o gesto local. O `activate-tab` que o terminal manda ao abrir a aba ([PRD-003](prd-003-terminal.md) RF-3.26) é uma ação de fundo: não marca pendência e não gera aviso.
+  *Revisão (2026-11-20, especificação 0.5):* nenhuma ação ativa aba no desktop, e o `activate-tab` sai; o terminal manda `view-tab`, que não é ação ([ADR-0012](../adr/0012-abrir-aba-nao-muda-o-desktop.md)).
 
 ## Fora de escopo
 
 - Fixar e desafixar, sessões nomeadas, destacar aba numa janela nova, abrir janela nova.
 - Reordenar abas e grupos por arraste dentro da trilha.
 - Seleção múltipla de abas.
-- Mudar o painel focado de uma aba ou dar foco a uma janela do sistema do desktop. (A aba ativa muda desde a especificação 0.4: pelas ações, como no gesto local, e ao abrir uma aba no terminal, [PRD-003](prd-003-terminal.md) RF-3.26.)
+- Mudar o painel focado de uma aba ou dar foco a uma janela do sistema do desktop. (A aba ativa mudou na especificação 0.4, pelas ações e ao abrir uma aba no terminal; desde a 0.5 volta a ficar fora: [ADR-0012](../adr/0012-abrir-aba-nao-muda-o-desktop.md).)
 
 ## Riscos
 
 | Risco | Mitigação |
 |---|---|
 | Usuário fechar sem querer uma aba com trabalho no desktop | O desktop pede confirmação quando há processo; o app ainda não fecha nada por gesto de deslizar no v1 |
-| Ação remota surpreender quem está no desktop | A ação faz o que o gesto local faria, e nada além: nunca levanta a janela do sistema nem muda o painel focado; a troca de aba ativa é risco aceito pelo dono ([ADR-0010 do protocolo](https://github.com/porecatu/protocol/blob/main/docs/adr/0010-aba-ativa-pelo-cliente.md)); o indicador de celular conectado está visível no desktop |
+| Ação remota surpreender quem está no desktop | A ação faz o que o gesto local faria, e nada além: nunca levanta a janela do sistema nem muda o painel focado; desde a especificação 0.5 a ação também não troca a aba ativa ([ADR-0011 do protocolo](https://github.com/porecatu/protocol/blob/main/docs/adr/0011-cliente-nao-muda-a-aba-ativa-e-view-tab.md)); a aba que o celular vê é marcada na barra do desktop; o indicador de celular conectado está visível no desktop |

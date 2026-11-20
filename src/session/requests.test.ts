@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import { ErrorCode, ERROR_CODES, type ActionResult } from "@/protocol";
-import { activateTab, closeTab, newGroup, newTab, renameTab } from "./actions";
+import { closeTab, newGroup, newTab, renameTab } from "./actions";
 import {
   NEW_TAB_APPEAR_TIMEOUT_MS,
   applyActionResult,
@@ -94,21 +94,6 @@ describe("pending items (RF-4.9)", () => {
     expect(dropped.state.pending.size).toBe(0);
   });
 
-  it("drops an activate-tab without reporting it as lost", () => {
-    let state = trackAction(createRequestsState(), activateTab(1, 7), 0);
-    state = trackAction(state, closeTab(2, 2), 0);
-    const dropped = dropAll(state);
-    expect(dropped.lost.map((entry) => entry.id)).toEqual([2]);
-    expect(dropped.state.pending.size).toBe(0);
-  });
-
-  it("never marks the tab of an activate-tab as pending", () => {
-    const state = trackAction(createRequestsState(), activateTab(1, 7), 0);
-    expect(isRequestPending(state, 1)).toBe(true);
-    expect(isItemPending(state, { kind: "tab", id: 7 })).toBe(false);
-    expect(canSendAction(state, closeTab(2, 7))).toBe(true);
-    expect(canSendAction(state, activateTab(3, 7))).toBe(true);
-  });
 });
 
 describe("failures (RF-4.10)", () => {
@@ -125,15 +110,6 @@ describe("failures (RF-4.10)", () => {
       failure: { code: ErrorCode.busy, silent: false, staleTree: false },
     });
     expect(step.state.pending.size).toBe(0);
-  });
-
-  it("any failure of activate-tab is silent", () => {
-    for (const code of [ErrorCode.unknownTab, ErrorCode.unsupported, ErrorCode.busy]) {
-      const state = trackAction(createRequestsState(), activateTab(1, 7), 0);
-      const step = applyActionResult(state, { type: "action-result", id: 1, error: code }, 10, none);
-      expect(step.outcome).toMatchObject({ status: "failed", failure: { code, silent: true } });
-      expect(step.state.pending.size).toBe(0);
-    }
   });
 
   it("cancelled is silent", () => {

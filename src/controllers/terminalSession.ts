@@ -23,11 +23,13 @@
 // - input goes only to a subscribed, live, `running` pane; every refusal is an
 //   `input-refused` event with its code, for the screen to explain (RF-3.25);
 // - a paste with a line break waits for `pasteConfirm()`; nothing leaves before;
-// - opening the tab makes it the active tab of its window on the desktop
-//   (`activate-tab`, spec 0.4), once per opening: at the first moment the
-//   session is `ready` with the tab in the tree, unless it already is the
-//   active one. Not again on a reconnection nor on another pane. It is a
-//   background action: a refusal or a failed result shows nothing.
+// - the app never changes the active tab of the desktop (spec 0.5, ADR-0012):
+//   it tells the host which tab is on screen with `view-tab { tab }`, once per
+//   session, at the first moment the session is `ready` with the tab in the
+//   tree, and again at every new `ready` (the state on the desktop dies with
+//   the session). `close()` sends `view-tab { tab: null }`. Not on another
+//   pane: the tab is the same. It is not an action: no request id, nothing
+//   pending, nothing shown; an `error` that answers it is routed nowhere;
 //
 // Nothing here logs content: no grid, history, keys, typed or pasted text,
 // titles or directories. The pasted text waits in a closure, never in the store.
@@ -56,7 +58,7 @@ import {
   type WorkspaceMessage,
   type WorkspaceWindow,
 } from "@/protocol";
-import { activateTab, startPane as startPaneAction } from "@/session/actions";
+import { startPane as startPaneAction } from "@/session/actions";
 import type { Clock, Scheduler } from "@/session/clock";
 import type { SendActionResult, SessionState, SessionStore } from "@/session/sessionStore";
 import { type ProtocolFault, SubscriptionSet, type SubscriptionEvent } from "@/session/subscription";
@@ -323,8 +325,8 @@ export function createTerminalSession(deps: TerminalSessionDeps): TerminalSessio
   /** The paste waiting for confirmation and its pane. Never in the store. */
   let pending: { readonly text: string; readonly pane: PaneId } | null = null;
   let detach: (() => void)[] = [];
-  /** `activate-tab` was sent for this opening, or was not needed: never again. */
-  let activationSettled = false;
+  /** `view-tab { tab }` went out in the current session: not again until the next `ready`. */
+  let viewReported = false;
   /** The pane list of the last layout seen, so an unchanged tree keeps the same array. */
   let paneList: { readonly layout: PaneNode; readonly panes: readonly Pane[] } | null = null;
 
@@ -614,27 +616,21 @@ export function createTerminalSession(deps: TerminalSessionDeps): TerminalSessio
     snapshotIncoming = false;
   }
 
-  // ------------------------------------------------------------ activation
+  // ------------------------------------------------------------ view-tab
 
   /**
-   * Makes the tab the active one of its window on the desktop, once per
-   * opening, at the first moment the session is `ready` with the tab in the
-   * tree. A background action: the result is not looked at, and its failure
-   * is silent in the session store (`isBackgroundAction`).
+   * Tells the host the tab on screen (`view-tab`, spec 03 §4.4), once per
+   * session, at the first moment the session is `ready` with the tab in the
+   * tree. Not an action: it goes straight out, with no request id.
    */
-  function activateOnce(): void {
-    if (activationSettled || !opened || closed || tabGone !== null || !isReady()) {
+  function reportView(): void {
+    if (viewReported || !opened || closed || tabGone !== null || !isReady()) {
       return;
     }
-    const located = locateTab(session.getState().workspace, tabId);
-    if (located === undefined) {
+    if (locateTab(session.getState().workspace, tabId) === undefined) {
       return;
     }
-    activationSettled = true;
-    if (located.window.active === tabId) {
-      return;
-    }
-    session.sendAction((id) => activateTab(id, tabId));
+    viewReported = session.send({ type: "view-tab", tab: tabId });
   }
 
   // ------------------------------------------------------------ session
@@ -651,6 +647,8 @@ export function createTerminalSession(deps: TerminalSessionDeps): TerminalSessio
   }
 
   function leaveReady(): void {
+    // The state on the desktop died with the session: the next `ready` reports again.
+    viewReported = false;
     const sub = liveSub();
     if (sub !== undefined && sub.grid.hasState) {
       lastGrid = sub.grid;
@@ -677,7 +675,7 @@ export function createTerminalSession(deps: TerminalSessionDeps): TerminalSessio
     } else if (ready && next.workspace !== previous.workspace) {
       reconcile(false);
     }
-    activateOnce();
+    reportView();
   }
 
   // ------------------------------------------------------------ input
@@ -719,7 +717,7 @@ export function createTerminalSession(deps: TerminalSessionDeps): TerminalSessio
       if (state.connection.state === "ready") {
         set.reset(welcomeMax());
         reconcile(true);
-        activateOnce();
+        reportView();
         return;
       }
       // Not up yet (or reconnecting): show what the tree says, subscribe at `ready`.
@@ -753,6 +751,10 @@ export function createTerminalSession(deps: TerminalSessionDeps): TerminalSessio
         return;
       }
       closed = true;
+      if (viewReported && isReady()) {
+        session.send({ type: "view-tab", tab: null });
+      }
+      viewReported = false;
       for (const pane of set.panes()) {
         set.unsubscribe(pane);
       }

@@ -81,7 +81,7 @@ Controladores (`src/controllers/`):
 | `desktops.ts` | A lista de desktops: leitura de `desktops.v1`, renomear e remover, presença só enquanto a lista está visível, abrir pelo registro e o estado de cada linha conforme a tentativa anda (`rowStatus`: erro antes de presença) |
 | `settings.ts` | As configurações em memória, uma cópia só para o app inteiro, lidas uma vez de `settings.v1` e gravadas a cada mudança (a mudança aparece já e volta atrás se não puder ser gravada) |
 | `pairing.ts` | Os efeitos do fluxo de pareamento (socket, prazos, gravação do desktop), o nome do aparelho do último pareamento e a entrega da sessão aberta ao registro (§2) |
-| `terminalSession.ts` | Uma tela de terminal aberta: a assinatura do painel (`SubscriptionSet`), o input (`InputSender`, modificadores, colar), o histórico, a reassinatura depois da reconexão e o `activate-tab` da abertura (§2) |
+| `terminalSession.ts` | Uma tela de terminal aberta: a assinatura do painel (`SubscriptionSet`), o input (`InputSender`, modificadores, colar), o histórico, a reassinatura depois da reconexão e o `activate-tab` da abertura (§2; desde a especificação 0.5, o `view-tab` da tela aberta, [ADR-0012](adr/0012-abrir-aba-nao-muda-o-desktop.md)) |
 | `overlay.ts` | A pilha de folhas e diálogos e a fila de avisos do app inteiro ([ADR-0011](adr/0011-folhas-dialogos-e-avisos-proprios.md)), com dono (`app` ou `session:<desktopId>`) |
 
 Telas (`ui/`, importada como `@ui/`):
@@ -186,6 +186,8 @@ ready -> closed         (goodbye, not-paired, incompatible, usuário saiu)
 > - As ações do usuário seguem o gesto local também na ativação: `new-tab`, expandir um grupo e mover para janela ativam a aba no desktop.
 > - O app **nunca** muda o painel focado do desktop nem traz a janela do sistema para a frente.
 > - `activate-tab` é uma **ação de fundo** (`isBackgroundAction` em `src/session/actions.ts`): o app a manda sozinho, como efeito de navegar. Não marca item como pendente (`targetsOf` vazio) nem bloqueia outras ações da aba; a falha dela é silenciosa (`failure.silent` em `src/session/requests.ts`), e a perda numa queda também (`dropAll` não a conta entre as ações perdidas).
+
+> **Decidido em 2026-11-20 (especificação 0.5, [ADR-0012](adr/0012-abrir-aba-nao-muda-o-desktop.md)), implementado no mesmo dia:** o bloco acima deixa de valer. O app **nunca** muda a aba ativa do desktop, e as ações não ativam. O controlador do terminal troca o `activateOnce` por `view-tab { tab }` a cada `ready` com a aba na árvore (inclusive depois de reconectar), e `close()` manda `view-tab { tab: null }` antes de cancelar as assinaturas. `view-tab` não é ação (sem `request-id`, sem pendência, sem aviso), e `isBackgroundAction` saiu, com o caso de `targetsOf` (não havia outra ação de fundo); `failure.silent` fica só para `cancelled`. O `view-tab` sai por `session.send` (`reportView` em `src/controllers/terminalSession.ts`, com a marca `viewReported` zerada a cada saída do `ready`). O desktop usa o `view-tab` só para marcar a aba na barra.
 
 ### O que o store guarda
 
