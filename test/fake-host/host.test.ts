@@ -9,6 +9,7 @@ import {
   NamedKey,
   PairRejectReason,
   Platform,
+  SessionsMode,
   generateStaticKeypair,
   type ClientEvent,
   type GridDiff,
@@ -367,6 +368,26 @@ describe("scrollback, input, actions and bell", () => {
       { type: "error", code: ErrorCode.notSubscribed, pane: LIVE_PANE },
       { type: "error", code: ErrorCode.paneNotRunning, pane: 3 },
     ]);
+  });
+
+  it("answers list-sessions with the saved sessions, echoing the id", () => {
+    const client = ready(world());
+    client.send({ type: "list-sessions", id: 41 });
+    client.send({ type: "list-sessions", id: 42 });
+    const answers = client.ofType("sessions");
+    expect(answers.map((answer) => answer.id)).toEqual([41, 42]);
+    expect(answers[0]).toMatchObject({ mode: SessionsMode.newWindow });
+    expect(answers[0]?.list).toEqual([
+      { session: 1, name: "api + front", readable: true },
+      { session: 2, name: "infra", readable: true },
+      { session: 3, name: "backup antigo", readable: false },
+    ]);
+  });
+
+  it("answers restore-session as unsupported, like every other action", () => {
+    const client = ready(world());
+    client.send({ type: "action", id: 5, do: { type: "restore-session", session: 1 } });
+    expect(client.ofType("action-result")).toEqual([{ type: "action-result", id: 5, error: ErrorCode.unsupported }]);
   });
 
   it("answers every action as unsupported", () => {

@@ -169,7 +169,7 @@ Pedido do dono em 2026-11-20: abrir uma aba no app trocava a aba ativa do deskto
 
 **Verificação prevista:** além da dívida de aparelho de sempre, conferir no desktop real o ícone de aba vista aparecendo ao abrir a aba no app, sumindo ao sair da tela e voltando depois de uma reconexão.
 
-## Especificação 0.6: restaurar sessão salva — documentada em 2026-11-20, não implementada
+## Especificação 0.6: restaurar sessão salva — implementada em 2026-11-20
 
 Pedido do dono em 2026-11-20: escolher, pelo app, uma sessão nomeada do desktop e restaurá-la. Decisões no [ADR-0012 do protocolo](https://github.com/porecatu/protocol/blob/main/docs/adr/0012-sessoes-nomeadas-pelo-cliente.md) e, no Porecatu, no [ADR-0113](https://github.com/porecatu/terminal/blob/main/docs/adr/0113-restaurar-sessao-nomeada-pelo-celular.md). Requisitos RF-4.12 a RF-4.16 do [PRD-004](prd/prd-004-gestao-de-abas.md), emenda no [PRD-000](prd/prd-000-visao-de-produto.md) e a folha na [anatomia §4.12.10](design/proposta-de-anatomia.md), que **espera o aval visual do dono** (§9.2). Não há ADR novo neste repositório: o app só segue o protocolo e a anatomia.
 
@@ -180,9 +180,9 @@ O dono decidiu:
 - só listar e restaurar;
 - entrada pelo `bookmark` da barra do workspace.
 
-**Só a documentação existe.** Etapas, na ordem de dependência:
+**Implementado em 2026-11-20**, todas as etapas abaixo, verificado por teste automatizado em Node (`pnpm test`: 1680 testes em 130 suítes; `pnpm typecheck` e `pnpm lint` limpos). O caso novo do `pnpm real-host` foi escrito, mas **não rodou** contra um Porecatu 0.6. Etapas, na ordem de dependência:
 
-1. **Aval visual do dono** sobre a §4.12.10 (e os itens do §9.2), antes de qualquer tela.
+1. **Aval visual do dono** sobre a §4.12.10: dado em 2026-11-20, sobre a anatomia; as escolhas da implementação estão no §9.2.
 2. **Pacote do protocolo na 0.6** (pré-requisito externo): `vendor/porecatu-protocol-*.tgz` regerado do commit que implementar a 0.6, com `list-sessions`, `sessions`, `restore-session`, `unknown-session` e `session-unreadable` ([ADR-0004](adr/0004-criptografia-em-js-puro.md)).
 3. **Lógica:**
    - builder `restoreSession` e `targetsOf` em `src/session/actions.ts`;

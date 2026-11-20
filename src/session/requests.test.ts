@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import { ErrorCode, ERROR_CODES, type ActionResult } from "@/protocol";
-import { closeTab, newGroup, newTab, renameTab } from "./actions";
+import { closeTab, newGroup, newTab, renameTab, restoreSession } from "./actions";
 import {
   NEW_TAB_APPEAR_TIMEOUT_MS,
   applyActionResult,
@@ -130,6 +130,26 @@ describe("failures (RF-4.10)", () => {
     ]) {
       expect(classifyFailure(code).staleTree).toBe(true);
     }
+  });
+
+  it("unknown-session and session-unreadable are visible failures that leave the tree alone", () => {
+    for (const code of [ErrorCode.unknownSession, ErrorCode.sessionUnreadable]) {
+      expect(classifyFailure(code)).toEqual({ code, silent: false, staleTree: false });
+    }
+  });
+
+  it("a failed restore-session is reported without a stale tree", () => {
+    const state = trackAction(createRequestsState(), restoreSession(1, 7, 3), 0);
+    const step = applyActionResult(
+      state,
+      { type: "action-result", id: 1, error: ErrorCode.unknownSession },
+      10,
+      none,
+    );
+    expect(step.outcome).toMatchObject({
+      status: "failed",
+      failure: { code: ErrorCode.unknownSession, silent: false, staleTree: false },
+    });
   });
 
   it("classifies every code of the package", () => {

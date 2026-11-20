@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Builders of the 13 actions of spec 03 §7 (PRD-004). Each one returns the
+// Builders of the 14 actions of spec 03 §7 (PRD-004). Each one returns the
 // `ClientMessage` of type `action` with the request id the caller allocated;
 // nothing here touches the network or a clock. `targetsOf` tells which items
 // an action affects, so the tracker can mark them "in progress" (RF-4.9).
@@ -12,6 +12,7 @@ import type {
   PaneId,
   ProfileId,
   RequestId,
+  SessionId,
   TabId,
   WindowId,
 } from "@/protocol";
@@ -117,9 +118,23 @@ export function startPane(id: RequestId, pane: PaneId): Action {
 }
 
 /**
+ * `restore-session` (RF-4.12 to RF-4.16): without `window` the desktop opens
+ * the saved session in a new window; with it, appends it to that window.
+ */
+export function restoreSession(id: RequestId, session: SessionId, window?: WindowId): Action {
+  return wrap(id, {
+    type: "restore-session",
+    session,
+    ...(window !== undefined ? { window } : {}),
+  });
+}
+
+/**
  * The items an action affects, which show a pending indicator and refuse
  * another action until the `action-result` (RF-4.9). `new-tab` marks the group
- * when there is one, the window otherwise; moves mark only the moved item.
+ * when there is one, the window otherwise; moves mark only the moved item;
+ * `restore-session` marks the window it appends to, and nothing when it opens
+ * a new one.
  */
 export function targetsOf(body: ActionBody): readonly ItemRef[] {
   switch (body.type) {
@@ -137,6 +152,8 @@ export function targetsOf(body: ActionBody): readonly ItemRef[] {
       return [{ kind: "pane", id: body.pane }];
     case "new-group":
       return body.tabs.map((tab): ItemRef => ({ kind: "tab", id: tab }));
+    case "restore-session":
+      return body.window !== undefined ? [{ kind: "window", id: body.window }] : [];
     case "rename-group":
     case "set-group-color":
     case "collapse-group":

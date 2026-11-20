@@ -13,6 +13,7 @@ import {
   newTab,
   renameGroup,
   renameTab,
+  restoreSession,
   setGroupColor,
   startPane,
   targetsOf,
@@ -47,11 +48,13 @@ describe("action builders", () => {
     moveGroupToWindow(15, 3, 11),
     ungroup(16, 3),
     startPane(17, 30),
+    restoreSession(18, 7),
+    restoreSession(19, 7, 11),
   ];
 
-  it("covers the 13 action kinds of the spec", () => {
+  it("covers the 14 action kinds of the spec", () => {
     const kinds = new Set(all.map((action) => action.do.type));
-    expect(kinds.size).toBe(13);
+    expect(kinds.size).toBe(14);
   });
 
   it("builds valid wire messages", () => {
@@ -72,6 +75,12 @@ describe("action builders", () => {
     expect(newTab(1, 5).do).not.toHaveProperty("group");
     expect(newTab(1, 5).do).not.toHaveProperty("profile");
     expect(newGroup(1, [3], "g").do).not.toHaveProperty("color");
+    expect(restoreSession(1, 7).do).not.toHaveProperty("window");
+  });
+
+  it("builds restore-session with and without a window", () => {
+    expect(restoreSession(5, 7).do).toEqual({ type: "restore-session", session: 7 });
+    expect(restoreSession(5, 7, 11).do).toEqual({ type: "restore-session", session: 7, window: 11 });
   });
 
   it("copies the tab list of new-group", () => {
@@ -116,5 +125,10 @@ describe("targetsOf", () => {
   it("marks the group of new-tab when there is one, the window otherwise", () => {
     expect(keys(newTab(1, 2))).toEqual(["window:2"]);
     expect(keys(newTab(1, 2, { group: 8 }))).toEqual(["group:8"]);
+  });
+
+  it("marks the window restore-session appends to, and nothing for a new window", () => {
+    expect(keys(restoreSession(1, 7, 3))).toEqual(["window:3"]);
+    expect(keys(restoreSession(1, 7))).toEqual([]);
   });
 });

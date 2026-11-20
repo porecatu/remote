@@ -81,6 +81,15 @@ export function windowChoices(
 }
 
 /**
+ * Every window of the desktop, in the order received (§4.12.10, step 2 of the
+ * saved sessions: where the restored tabs are appended). Unlike
+ * {@link windowChoices} nothing is left out, and there is no origin.
+ */
+export function allWindowChoices(workspace: WorkspaceMessage): readonly WindowChoice[] {
+  return workspace.windows.map((win) => ({ window: win.id, title: win.title, tabCount: tabsOf(win).length }));
+}
+
+/**
  * The colors a group can take (§4.12.6, §4.12.7): the desktop's
  * `group_colors`, or the six of the desktop when the theme brings none. The
  * index in this list is the `color` the actions send.

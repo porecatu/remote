@@ -541,3 +541,36 @@ describe("WorkspaceScreen — connection (§4.5.4)", () => {
     expect(screen.getByTestId("group-10-header").props.accessibilityLabel).toContain(tn("workspace.tab_count", 1));
   });
 });
+
+describe("WorkspaceScreen — saved sessions (§4.5.2 item 1, §4.12.10)", () => {
+  it("puts the bookmark to the left of the search in the bar", async () => {
+    await ready();
+    const bar = screen.getByTestId("workspace-bar");
+    const ids = within(bar)
+      .getAllByRole("button")
+      .map((button) => String(button.props.testID));
+    expect(ids.indexOf("workspace-saved-sessions")).toBeGreaterThan(-1);
+    expect(ids.indexOf("workspace-saved-sessions")).toBeLessThan(ids.indexOf("workspace-search-open"));
+    expect(screen.getByTestId("workspace-saved-sessions").props.accessibilityLabel).toBe(t("saved_sessions.open"));
+  });
+
+  it("opens the sheet, owned by the session, and asks the desktop for the list", async () => {
+    const r = await ready();
+    await fireEvent.press(screen.getByTestId("workspace-saved-sessions"));
+
+    expect(screen.getByTestId("saved-sessions-sheet-title")).toHaveTextContent(t("saved_sessions.title"));
+    expect(openSheets(r)[0]?.owner).toBe(`session:${r.h.desktop.id}`);
+    expect(r.host.received.filter((message) => message.type === "list-sessions")).toHaveLength(1);
+  });
+
+  it("does not open while the session is not ready", async () => {
+    const r = await ready();
+    await act(async () => {
+      r.services.fakes.network.last().drop();
+    });
+
+    await fireEvent.press(screen.getByTestId("workspace-saved-sessions"));
+
+    expect(openSheets(r)).toEqual([]);
+  });
+});

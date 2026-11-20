@@ -33,6 +33,8 @@ const ERROR_KEYS = {
   [ErrorCode.cancelled]: "error.cancelled",
   [ErrorCode.unsupported]: "error.unsupported",
   [ErrorCode.lastTab]: "error.last-tab",
+  [ErrorCode.unknownSession]: "error.unknown-session",
+  [ErrorCode.sessionUnreadable]: "error.session-unreadable",
 } as const satisfies Record<ErrorCode, MessageKey>;
 
 const GOODBYE_KEYS = {

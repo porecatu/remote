@@ -12,6 +12,7 @@ import ArrowLeft from "lucide-react-native/icons/arrow-left";
 import ArrowRight from "lucide-react-native/icons/arrow-right";
 import ArrowUp from "lucide-react-native/icons/arrow-up";
 import Bell from "lucide-react-native/icons/bell";
+import Bookmark from "lucide-react-native/icons/bookmark";
 import Camera from "lucide-react-native/icons/camera";
 import CameraOff from "lucide-react-native/icons/camera-off";
 import Check from "lucide-react-native/icons/check";
@@ -68,6 +69,7 @@ const icons = {
   "arrow-right": ArrowRight,
   "arrow-up": ArrowUp,
   bell: Bell,
+  bookmark: Bookmark,
   camera: Camera,
   "camera-off": CameraOff,
   check: Check,

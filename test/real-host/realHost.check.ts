@@ -20,6 +20,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { request } from "node:http";
 import { join } from "node:path";
 import { WebSocket } from "ws";
+import { createSavedSessions } from "@/controllers/savedSessions";
 import { type TerminalSession, createTerminalSession } from "@/controllers/terminalSession";
 import type { GridModel } from "@/grid/gridModel";
 import type { FetchLike } from "@/net/presence";
@@ -34,6 +35,7 @@ import {
   type PaneNode,
   PaneState,
   type RequestId,
+  SessionsMode,
   type Tab,
   type WindowId,
   type WorkspaceMessage,
@@ -49,6 +51,7 @@ import {
   newTab,
   renameGroup,
   renameTab,
+  restoreSession,
   setGroupColor,
   startPane,
   ungroup,
@@ -56,7 +59,7 @@ import {
 import { realClock, realScheduler } from "@/session/clock";
 import type { OpenSocket } from "@/session/lifecycle";
 import type { ActionOutcome } from "@/session/requests";
-import type { SessionStore } from "@/session/sessionStore";
+import type { SendActionResult, SessionStore } from "@/session/sessionStore";
 import type { SecureStoreKey } from "@/storage/secureStore";
 import { createPairingControllerFromServices } from "@ui/screens/pairing/PairingContext";
 import { type TestServices, createTestServices } from "@ui/services/testing";
@@ -238,6 +241,11 @@ const focusedByTab = (): Map<number, number> => new Map(places(ws()).map((p) => 
 
 /** Sends an action through the session store and waits for its outcome. */
 function act(build: (id: RequestId) => Action, label: string, timeoutMs = 15_000): Promise<ActionOutcome> {
+  return actVia(() => session.sendAction(build), label, timeoutMs);
+}
+
+/** Sends an action through `send` (the session store's `sendAction` or a controller's) and waits for its outcome. */
+function actVia(send: () => SendActionResult, label: string, timeoutMs = 15_000): Promise<ActionOutcome> {
   return new Promise((resolve, reject) => {
     let id: RequestId | null = null;
     const timer = setTimeout(() => {
@@ -251,7 +259,7 @@ function act(build: (id: RequestId) => Action, label: string, timeoutMs = 15_000
         resolve(event.outcome);
       }
     });
-    const sent = session.sendAction(build);
+    const sent = send();
     if (!sent.ok) {
       clearTimeout(timer);
       off();
@@ -625,6 +633,67 @@ describe("against a real Porecatu and relay", () => {
       "move-tab-to-group to another window's group: unknown-group",
       ErrorCode.unknownGroup,
     );
+  });
+
+  test("saved sessions: list, restore in a new window, unknown id", async () => {
+    // The named session of the fixture (`sessions/` next to the `session.json`); only ids and counts are reported.
+    const saved = createSavedSessions({ session, scheduler: realScheduler });
+    expect(saved.load()).toBe(true);
+    const loaded = await waitFor(() => {
+      const state = saved.getState();
+      return state.status === "loading" ? null : state;
+    }, "the list of saved sessions");
+    record("list-sessions answered with sessions", loaded.status === "loaded", loaded.status);
+    expect(loaded.status).toBe("loaded");
+    if (loaded.status !== "loaded") {
+      return;
+    }
+    record("sessions.mode is new-window (restore_named_in_current_window off)", loaded.mode === SessionsMode.newWindow);
+    expect(loaded.mode).toBe(SessionsMode.newWindow);
+    const entry = loaded.list.find((s) => s.name === "real-host");
+    record("the fixture's named session is listed and readable", entry?.readable === true, `${loaded.list.length} listed`);
+    expect(entry?.readable).toBe(true);
+    const sessionId = entry?.session ?? 0;
+
+    // Restore in a new window: it comes last, nothing else changes.
+    const before = ws();
+    const front = foreground();
+    const activeBefore = new Map(before.windows.map((w) => [w.id, w.active]));
+    const tabsOf = (workspace: WorkspaceMessage, window: WindowId): number => places(workspace).filter((p) => p.window === window).length;
+    const tabsBefore = new Map(before.windows.map((w) => [w.id, tabsOf(before, w.id)]));
+    const tabIdsBefore = places(before).map((p) => p.tab.tab);
+    const outcome = await actVia(() => saved.restore(sessionId), "restore-session (new window)");
+    record("restore-session in a new window: action-result without error", outcome.status !== "failed", `error ${failureCode(outcome)}`);
+    expect(outcome.status).not.toBe("failed");
+    await waitFor(() => ws().windows.length === before.windows.length + 1, "the workspace with one more window");
+    // The workspace after the result may lag up to 250 ms (4 per second).
+    await pause(600);
+    const settled = ws();
+    expect(settled.windows).toHaveLength(before.windows.length + 1);
+    expect(settled.windows.slice(0, before.windows.length).map((w) => w.id)).toEqual(before.windows.map((w) => w.id));
+    const created = settled.windows[settled.windows.length - 1];
+    const createdTabs = tabsOf(settled, created?.id ?? 0);
+    record("a new window appears last, with the session's tabs", createdTabs > 0, `${createdTabs} tab(s)`);
+    expect(createdTabs).toBeGreaterThan(0);
+
+    const activeKept = before.windows.every((w) => windowOf(w.id)?.active === activeBefore.get(w.id));
+    record("the active tab of every existing window is unchanged", activeKept);
+    expect(activeKept).toBe(true);
+    const tabsKept = before.windows.every((w) => tabsOf(settled, w.id) === tabsBefore.get(w.id));
+    record("no tab of the existing windows disappeared", tabsKept);
+    expect(tabsKept).toBe(true);
+    const settledIds = new Set(places(settled).map((p) => p.tab.tab));
+    expect(tabIdsBefore.every((id) => settledIds.has(id))).toBe(true);
+
+    const back = foreground();
+    if (front !== null && back !== null) {
+      record("no system window raised by the restore (foreground window unchanged)", front.hwnd === back.hwnd);
+      expect(back.hwnd).toBe(front.hwnd);
+    }
+
+    // An id the desktop does not have.
+    await actFails((id) => restoreSession(id, 4_000_000), "restore-session unknown id: unknown-session", ErrorCode.unknownSession);
+    saved.dispose();
   });
 
   test("leaves and comes back: presence, reconnection, same host instance", async () => {

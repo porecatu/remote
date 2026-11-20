@@ -12,17 +12,19 @@ O resultado da última verificação está no [roadmap](../../docs/roadmap.md), 
 - **Sessão**: `welcome`, `theme`, `profiles` e o `workspace` restaurado; presença (`GET /v0/presence`); sair e voltar com o mesmo `host_instance`.
 - **Terminal**: assinatura e `grid-ack`, texto, Enter, colar, `Ctrl` da barra + `c`, uma página de scrollback e a campainha.
 - **As ações** (14 na especificação 0.4; 13 desde a 0.5, sem `activate-tab`, com abrir uma aba conferido como **não** mudando o `active`), cada uma conferida no `workspace` seguinte, e o `focused` de toda aba intacto depois de cada uma. Também `confirm-request` recusado (`cancelled`) e aceito, e os códigos `invalid-argument`, `unknown-tab`, `unknown-profile` e `unknown-group`.
+- **Sessões salvas** (RF-4.12 a RF-4.16; no desktop, ADR-0113): `list-sessions` pelo controlador, com `mode` `newWindow` (chave `restore_named_in_current_window` desligada) e a sessão do fixture `named-session.json` listada como legível; `restore-session` sem `window`, que abre **uma janela a mais, por último** no `workspace`, com o `active` e a contagem de abas de toda janela que já existia intactos e, no Windows, a janela em primeiro plano a mesma; e um id inexistente, que dá `unknown-session`.
 - **Nenhuma janela do sistema levantada** (só no Windows): a janela em primeiro plano é a mesma antes e depois de mover aba e grupo para outra janela e de ativar uma aba na janela de trás.
 
-Fica de fora: aba fixada, `last-tab`, `busy`, SSH (`connecting`, `awaiting-desktop`) e `too-many-subscriptions`.
+Fica de fora: aba fixada, `last-tab`, `busy`, SSH (`connecting`, `awaiting-desktop`) e `too-many-subscriptions`; das sessões salvas, o modo `append` (`restore_named_in_current_window = true`: `invalid-argument` sem `window`, abas no fim da trilha com `window`) e `session-unreadable`. O `append` pede mudar a chave do `porecatu.toml` do desktop de teste em plena rodada (recarga a quente), e o teste não sabe reescrever esse arquivo; para conferi-lo à mão, ligue a chave e rode de novo.
 
 ## Preparar
 
-Num diretório de trabalho **fora do repositório** (o `PORECATU_REAL_HOST_DIR`), copie os três arquivos de [`fixtures/`](fixtures/):
+Num diretório de trabalho **fora do repositório** (o `PORECATU_REAL_HOST_DIR`), copie os arquivos de [`fixtures/`](fixtures/):
 
 | Arquivo | Para quê |
 |---|---|
 | `session.seed.json` | Sessão do desktop de teste: duas janelas, o grupo "Build", uma aba dividida e abas que restauram "não iniciadas". Copie para `session/session.json` **antes de cada rodada**: o desktop a regrava e o teste a muda |
+| `named-session.json` | Sessão nomeada "real-host" (uma janela, duas abas "não iniciadas"), para listar e restaurar. Copie para `session/sessions/` (crie a pasta) **antes de cada rodada**, ao lado do `session.json` |
 | `porecatu.toml` | Configuração do desktop de teste: acesso remoto ligado em `ws://127.0.0.1:8790`, `lazy_restore` e `ctrl+shift+f12` para `remote.pair` |
 | `relay.toml` | Relay em `127.0.0.1:8790`, lendo o token do arquivo `token` ao lado |
 

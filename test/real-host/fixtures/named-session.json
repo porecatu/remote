@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "name": "real-host",
+  "saved_at": 1795000000,
+  "windows": [
+    {
+      "geometry": { "x": 140, "y": 140, "width": 900, "height": 600, "maximized": false },
+      "monitor": null,
+      "groups": [{ "id": 0, "name": null, "color": null, "collapsed": false, "tabs": [1, 2] }],
+      "tabs": [
+        { "id": 1, "custom_title": "Nomeada um", "cwd": null, "spawn_program": null, "panes": null },
+        { "id": 2, "custom_title": "Nomeada dois", "cwd": null, "spawn_program": null, "panes": null }
+      ],
+      "active_tab": 1,
+      "theme": null,
+      "zoom_steps": 0
+    }
+  ]
+}

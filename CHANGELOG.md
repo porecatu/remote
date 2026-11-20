@@ -8,8 +8,8 @@ primeira versão publicada nas lojas.
 
 Implementação inicial: a camada de lógica (2026-11-16) e as telas dos PRDs 001
 a 004 (2026-11-17), conforme a [anatomia das telas](docs/design/proposta-de-anatomia.md)
-aprovada. O app segue a **especificação 0.5** do protocolo. Tudo o que entrou é
-verificado por teste automatizado em Node (`pnpm test`: 1634 testes em 128
+aprovada. O app segue a **especificação 0.6** do protocolo. Tudo o que entrou é
+verificado por teste automatizado em Node (`pnpm test`: 1680 testes em 130
 suítes, com `jest-expo` e `@testing-library/react-native`); **nada foi rodado
 num aparelho**, e o [ADR-0002](docs/adr/0002-render-da-grade-com-skia.md) segue
 Proposto até a medição do render em aparelho. Dívida de verificação no
@@ -17,6 +17,7 @@ Proposto até a medição do render em aparelho. Dívida de verificação no
 
 ### Adicionado
 
+- **Sessões salvas** (PRD-004 RF-4.12 a RF-4.16, anatomia §4.12.10, especificação 0.6 do protocolo; 2026-11-20): o botão `bookmark` na barra do workspace abre a folha "Sessões salvas", que pede a lista ao desktop a cada abertura e restaura a escolhida. Com o desktop no modo `append`, um segundo passo pergunta a janela. Nada é ativado nem fechado no desktop, e o app fica na árvore. Controlador `src/controllers/savedSessions.ts`, ação `restoreSession`, os erros `unknown-session` e `session-unreadable` no catálogo, o desktop falso responde `list-sessions` e o `pnpm real-host` ganhou o caso (ainda não rodado). O pacote `@porecatu/protocol` foi regerado do commit `a52fbb1`.
 - **Verificação contra o Porecatu real** (`pnpm real-host`, [test/real-host/](test/real-host/README.md), 2026-11-18): a lógica do app, montada como em produção mas sem telas, contra o Porecatu 0.10.0 e o relay de verdade em `127.0.0.1`, fora do `pnpm test`. Passou inteira: pareamento com confirmação no desktop, sessão, grade, input, scrollback, campainha, as 14 ações com efeito e o painel focado intacto, confirmação de fechamento, códigos de erro, nenhuma janela do sistema levantada, presença e reconexão. Nada do app precisou mudar. Resultado e limites no [roadmap](docs/roadmap.md).
 - **Barra de teclas toda rolável, em uma linha** (anatomia §4.8; RF-3.15; pedido do dono em 2026-11-18): `Esc`, `Tab`, `Shift`, `Ctrl` e `Alt` agora rolam junto com o resto, na ordem `Esc Tab Shift Ctrl Alt | ← ↓ ↑ → | Home End PgUp PgDn | Colar | F1…F12`, em grupos separados por filetes. As teclas `F1`–`F12` ficam sempre à mão, no fim da linha, e **não há mais `Fn`**. Uma primeira versão do dia, com duas linhas, teclado de setas à parte e símbolos (`fa308d6`), foi recusada pelo dono e desfeita.
 - **Modificador ligado fixado à esquerda da barra** (anatomia §4.8, RF-3.16; pedido do dono em 2026-11-18): `Shift`, `Ctrl` ou `Alt`, armado ou travado, sai da linha rolável e fica fixo à esquerda, com o visual de ligado, para nunca sumir da vista. Um toque nessa tecla o desliga na hora (`releaseModifier`, `ModifierKeys.release`); ao desligar, ou depois de gasto, ele volta ao seu lugar. O leitor de tela ouve "Toque para soltar".

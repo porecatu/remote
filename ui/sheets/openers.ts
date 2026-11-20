@@ -17,6 +17,7 @@ import {
   openNewGroupSheet,
   openRenameGroupSheet,
   openRenameTabSheet,
+  openSavedSessionsSheet,
 } from "./forms";
 import { type TerminalViewOptions, openGroupMenu, openTabMenu } from "./menus";
 import { openNewTabSheet } from "./NewTabSheet";
@@ -116,4 +117,14 @@ export function openNewTabFor(overlay: OverlayApi, options: NewTabOpener): strin
     ...(groupId === undefined ? {} : { groupId }),
     ...withOrigin(origin),
   });
+}
+
+/**
+ * Opens the saved sessions sheet (§4.12.10) of the desktop: the list, and for
+ * `append` the choice of window. The restored tabs show up in the tree with
+ * the next `workspace`; nothing opens in the terminal. Returns the sheet's id.
+ */
+export function openSavedSessionsFor(overlay: OverlayApi, options: OpenerBase): string {
+  const { session, origin } = options;
+  return openSavedSessionsSheet(overlay, { session, ...withOrigin(origin) });
 }

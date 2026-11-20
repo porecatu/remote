@@ -39,7 +39,7 @@ Acompanhar não basta: o usuário quer **abrir uma aba** para rodar um comando, 
 
 ### Sessões salvas
 
-> **Acrescentado em 2026-11-20** (especificação 0.6 do protocolo, [ADR-0012 do protocolo](https://github.com/porecatu/protocol/blob/main/docs/adr/0012-sessoes-nomeadas-pelo-cliente.md); no desktop, [ADR-0113](https://github.com/porecatu/terminal/blob/main/docs/adr/0113-restaurar-sessao-nomeada-pelo-celular.md)). **Implementação pendente.** O dono decidiu quatro coisas: o destino segue a preferência do desktop; a janela nova nasce sem foco; nada é ativado nem fechado; e o app só lista e restaura, sem salvar nem excluir. A anatomia da folha está na [§4.12.10](../design/proposta-de-anatomia.md) e espera o aval visual do dono.
+> **Acrescentado em 2026-11-20** (especificação 0.6 do protocolo, [ADR-0012 do protocolo](https://github.com/porecatu/protocol/blob/main/docs/adr/0012-sessoes-nomeadas-pelo-cliente.md); no desktop, [ADR-0113](https://github.com/porecatu/terminal/blob/main/docs/adr/0113-restaurar-sessao-nomeada-pelo-celular.md)). **Implementado em 2026-11-20**, verificado só por teste automatizado em Node. O dono decidiu quatro coisas: o destino segue a preferência do desktop; a janela nova nasce sem foco; nada é ativado nem fechado; e o app só lista e restaura, sem salvar nem excluir. A anatomia da folha está na [§4.12.10](../design/proposta-de-anatomia.md), aprovada pelo dono em 2026-11-20.
 
 - **RF-4.12** **Sessões salvas**: um botão na barra do workspace, ao lado da busca, abre a folha "Sessões salvas". A folha pede a lista ao desktop (`list-sessions`) **cada vez que abre** e mostra as sessões na ordem do desktop, a salva mais recentemente primeiro. O app não guarda a lista entre aberturas nem entre sessões: o `session-id` só vale com o mesmo `host_instance`.
 - **RF-4.13** Enquanto a resposta não chega, a folha mostra um indicador de carregamento. Sem resposta em 10 s, mostra uma falha com **Tentar de novo**. Lista vazia é um estado próprio ("Nenhuma sessão salva no desktop"), não erro. Uma sessão com `readable: false` aparece esmaecida, com a nota de que não pode ser restaurada, e não aceita toque.
@@ -73,6 +73,7 @@ As folhas, os menus e o diálogo seguem a [anatomia](../design/proposta-de-anato
 | RF-4.6, RF-4.8 (menus) | `ui/sheets/menus/` (`TabMenuSheet`, `GroupMenuSheet`), abertos pela árvore e pela barra do terminal (`ui/sheets/openers.ts`) |
 | RF-4.9 | pendência por item em `src/session/requests.ts` (`targetsOf` em `src/session/actions.ts`); linhas a `opacity.pending` com spinner |
 | RF-4.10, RF-4.11 | `ui/session/actionMessages.ts` sobre `src/i18n/protocolMessages.ts` |
+| RF-4.12 a RF-4.16 (2026-11-20) | `ui/sheets/forms/SavedSessionsSheet.tsx`, aberta pelo `bookmark` de `ui/screens/workspace/WorkspaceScreen.tsx` (`openSavedSessionsFor` em `ui/sheets/openers.ts`), sobre `src/controllers/savedSessions.ts` e `restoreSession` em `src/session/actions.ts`; escolhas da implementação no §9.2 da anatomia |
 
 Decisões tomadas na implementação:
 

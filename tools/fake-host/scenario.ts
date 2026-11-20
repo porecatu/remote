@@ -18,6 +18,7 @@ import {
   CursorShape,
   PaneState,
   ProfileKind,
+  SessionsMode,
   SplitDir,
   STYLE,
   type Color,
@@ -26,6 +27,7 @@ import {
   type GridSnapshot,
   type Group,
   type Line,
+  type NamedSession,
   type Pane,
   type PaneId,
   type PaneNode,
@@ -33,6 +35,7 @@ import {
   type RequestId,
   type RowLine,
   type ScrollbackPage,
+  type Sessions,
   type Span,
   type Style,
   type Tab,
@@ -438,6 +441,20 @@ export function buildProfiles(): Profiles {
     ],
     defaultProfile: "default",
   };
+}
+
+/** The saved sessions the fake desktop lists: neutral names, the last one cannot be restored. */
+export function buildSavedSessions(): NamedSession[] {
+  return [
+    { session: 1, name: "api + front", readable: true },
+    { session: 2, name: "infra", readable: true },
+    { session: 3, name: "backup antigo", readable: false },
+  ];
+}
+
+/** The answer to a `list-sessions` (spec 03 §4.5): new-window mode, the list of {@link buildSavedSessions}. */
+export function buildSessions(id: RequestId): Sessions {
+  return { type: "sessions", id, mode: SessionsMode.newWindow, list: buildSavedSessions() };
 }
 
 function pane(

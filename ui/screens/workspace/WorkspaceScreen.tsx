@@ -35,7 +35,7 @@ import { type FocusOrigin, useOverlay } from "@ui/overlay";
 import { relayHost } from "@ui/screens/desktops/rowModel";
 import { useServices } from "@ui/services/ServicesContext";
 import { tabRoute } from "@ui/session/SessionOverlays";
-import { openGroupMenuFor, openNewTabFor, openTabMenuFor } from "@ui/sheets/openers";
+import { openGroupMenuFor, openNewTabFor, openSavedSessionsFor, openTabMenuFor } from "@ui/sheets/openers";
 import { opacity, useTheme } from "@ui/theme";
 
 import { ConnectionBanner, connectionSubtitle, isSessionLive, useRetryConnection } from "./ConnectionBanner";
@@ -226,6 +226,12 @@ function SessionWorkspace({ session, desktopId, name, relay, reachedReady, onLea
     [overlay, session],
   );
 
+  const onSavedSessions = useCallback(() => {
+    if (isSessionLive(session.getState().connection)) {
+      openSavedSessionsFor(overlay, { session });
+    }
+  }, [overlay, session]);
+
   const onPairAgain = useCallback(() => {
     router.replace(PAIR_ROUTE);
   }, [router]);
@@ -244,7 +250,15 @@ function SessionWorkspace({ session, desktopId, name, relay, reachedReady, onLea
         title={name}
         subtitle={connectionSubtitle(connection, tr)}
         back={back}
-        actions={[{ icon: "search", accessibilityLabel: t("search.open"), onPress: openSearch, testID: "workspace-search-open" }]}
+        actions={[
+          {
+            icon: "bookmark",
+            accessibilityLabel: t("saved_sessions.open"),
+            onPress: onSavedSessions,
+            testID: "workspace-saved-sessions",
+          },
+          { icon: "search", accessibilityLabel: t("search.open"), onPress: openSearch, testID: "workspace-search-open" },
+        ]}
         testID="workspace-bar"
       />
     );

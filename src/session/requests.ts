@@ -118,7 +118,11 @@ export interface ActionFailure {
    * No message is shown: `cancelled` (the user declined).
    */
   readonly silent: boolean;
-  /** `unknown-*`: the tree is stale, so the caller refreshes the view. */
+  /**
+   * `unknown-window`, `-group`, `-tab`, `-pane`, `-profile`: the tree is stale, so
+   * the caller refreshes the view. `unknown-session` and `session-unreadable`
+   * are about the list of saved sessions, not the tree: a visible failure only.
+   */
   readonly staleTree: boolean;
 }
 

@@ -42,6 +42,7 @@ import {
   LIVE_PANE,
   LivePane,
   buildProfiles,
+  buildSessions,
   buildTheme,
   buildWorkspace,
   collectPanes,
@@ -283,6 +284,9 @@ export function createScenarioHost(options: ScenarioHostOptions): ScenarioHost {
           state.viewedTab = null;
           reply(number, state, { type: "error", code: ErrorCode.unknownTab });
         }
+        return;
+      case "list-sessions":
+        reply(number, state, buildSessions(message.id));
         return;
       case "action":
         reply(number, state, { type: "action-result", id: message.id, error: ErrorCode.unsupported });

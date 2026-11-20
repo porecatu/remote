@@ -46,6 +46,23 @@ describe("actionFailureMessage", () => {
     );
   });
 
+  it("has the catalog text for the saved-session errors, not the generic one with the code", () => {
+    expect(actionFailureMessage(ErrorCode.unknownSession)).toEqual({
+      key: "error.unknown-session",
+      severity: "error",
+    });
+    expect(actionFailureMessage(ErrorCode.sessionUnreadable)).toEqual({
+      key: "error.session-unreadable",
+      severity: "error",
+    });
+    expect(actionMessageText(actionFailureMessage(ErrorCode.unknownSession)!, pt.t)).toBe(
+      "Essa sessão não existe mais no desktop. Abra a lista de novo.",
+    );
+    expect(actionMessageText(actionFailureMessage(ErrorCode.sessionUnreadable)!, pt.t)).toBe(
+      "O desktop não conseguiu ler essa sessão.",
+    );
+  });
+
   it("says nothing was closed, as information, when the desktop timed the confirmation out", () => {
     expect(actionFailureMessage(ErrorCode.confirmTimeout)).toEqual({
       key: "error.confirm-timeout",

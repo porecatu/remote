@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { defaultGroupColors } from "@ui/theme";
 
-import { groupChoices, groupPalette, windowChoices, windowOf } from "./model";
+import { allWindowChoices, groupChoices, groupPalette, windowChoices, windowOf } from "./model";
+import { tab, win, workspace } from "@/workspace/testing";
 import { formsTheme, formsWorkspace } from "../testing";
 
 describe("groupChoices", () => {
@@ -51,6 +52,22 @@ describe("windowChoices", () => {
 
   it("is undefined for a target the tree lost", () => {
     expect(windowChoices(formsWorkspace(), { kind: "group", id: 99 })).toBeUndefined();
+  });
+});
+
+describe("allWindowChoices", () => {
+  it("lists every window, the first one included, in the order received", () => {
+    expect(allWindowChoices(formsWorkspace())).toEqual([
+      { window: 1, title: "zsh", tabCount: 5 },
+      { window: 2, title: "htop", tabCount: 1 },
+      { window: 3, title: "logs", tabCount: 2 },
+    ]);
+  });
+
+  it("lists the only window of a desktop with one", () => {
+    expect(allWindowChoices(workspace([win(1, [tab(2)], { title: "zsh", active: 2 })]))).toEqual([
+      { window: 1, title: "zsh", tabCount: 1 },
+    ]);
   });
 });
 

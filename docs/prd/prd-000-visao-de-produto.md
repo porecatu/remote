@@ -73,7 +73,7 @@ Cada um destes é uma decisão, não um esquecimento.
 - **Abrir janela nova no desktop** ou destacar uma aba numa janela nova.
 - **Fixar e desafixar abas, sessões nomeadas, configurações e gerenciador de tarefas** do Porecatu.
 
-  > **Emenda (2026-11-20, especificação 0.6 do protocolo; implementação pendente).** **Restaurar uma sessão nomeada** sai desta lista e da anterior ([PRD-004](prd-004-gestao-de-abas.md), RF-4.12 a RF-4.16). O app lista as sessões salvas e restaura uma delas: numa janela nova do desktop, que não toma o foco, ou acrescentada a uma janela escolhida, conforme a preferência do desktop. **Salvar e excluir** sessões nomeadas e **abrir janela vazia** continuam fora do v1.
+  > **Emenda (2026-11-20, especificação 0.6 do protocolo; implementada no mesmo dia).** **Restaurar uma sessão nomeada** sai desta lista e da anterior ([PRD-004](prd-004-gestao-de-abas.md), RF-4.12 a RF-4.16). O app lista as sessões salvas e restaura uma delas: numa janela nova do desktop, que não toma o foco, ou acrescentada a uma janela escolhida, conforme a preferência do desktop. **Salvar e excluir** sessões nomeadas e **abrir janela vazia** continuam fora do v1.
 - **Redimensionar o terminal** para a tela do celular.
 - **Mouse** dentro de aplicações de terminal (cliques em TUIs).
 - **Seleção e cópia de texto da grade.** Desejável, mas fica para depois do v1 (é a primeira candidata).

@@ -9,6 +9,7 @@ export { NewGroupSheet, openNewGroupSheet, type NewGroupSheetProps } from "./New
 export { RenameGroupSheet, openRenameGroupSheet, type RenameGroupSheetProps } from "./RenameGroupSheet";
 export { RenameTabSheet, openRenameTabSheet, type RenameTabSheetProps } from "./RenameTabSheet";
 export {
+  allWindowChoices,
   groupChoices,
   groupPalette,
   windowChoices,
@@ -18,4 +19,5 @@ export {
   type MoveTarget,
   type WindowChoice,
 } from "./model";
+export { SavedSessionsSheet, openSavedSessionsSheet, type SavedSessionsSheetProps } from "./SavedSessionsSheet";
 export { type FormSheetOpenOptions } from "./useSheetAction";
