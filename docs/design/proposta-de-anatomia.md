@@ -233,7 +233,7 @@ Lucide, tamanho fixo (não acompanha o ajuste de fonte, [ADR-0008](../adr/0008-i
 
 | Papel | Tamanho | Traço | Onde |
 |---|---|---|---|
-| `icon.bar` | 24 | 2 | barras: voltar, `plus`, `settings`, `search`, `keyboard`, `ellipsis-vertical` da barra; `x` e `flashlight` da câmera |
+| `icon.bar` | 24 | 2 | barras: voltar, `plus`, `settings`, `search`, `bookmark` (sessões salvas, §4.12.10, **à espera do aval**), `keyboard`, `ellipsis-vertical` da barra; `x` e `flashlight` da câmera |
 | `icon.row` | 24 | 2 | ícone à esquerda da linha (`monitor` da linha de desktop) |
 | `icon.item` | 22 | 2 | item de folha; botão `ellipsis-vertical` da linha e do cabeçalho de grupo |
 | `icon.chevron` | 20 | 2 | chevrons de janela, de grupo e de linha que navega |
@@ -306,7 +306,8 @@ Bloqueio -> Lista de desktops --+--> Parear: permissão da câmera -> câmera ->
                           |   (busca; janelas; fixadas; grupos; abas)
                           |
                           +--> folhas: Menu da aba · Menu do grupo · Nova aba · Renomear ·
-                          |            Mover (grupo, janela) · Novo grupo · Cor
+                          |            Mover (grupo, janela) · Novo grupo · Cor ·
+                          |            Sessões salvas (-> Em qual janela?)   [à espera do aval, §4.12.10]
                           v
                        Terminal (grade; barra de teclas; seletor de painéis; colar)
                           +--> diálogo: Confirmação de fechamento
@@ -663,6 +664,7 @@ Todas voltam à lista ao fechar, com o desktop já marcado.
 ```
 
 1. **Barra.** Voltar; título = nome do desktop; linha de apoio = estado da conexão (§4.5.4). À direita, `search` (48) que abre o campo de busca.
+   *Proposta de 2026-11-20, à espera do aval (§4.12.10, §9.2):* à esquerda do `search`, `bookmark` (48, rótulo "Sessões salvas"), que abre a folha de sessões salvas. Ativo só com a sessão `ready`, como os menus.
 2. **Janelas (RF-2.6).** Na ordem recebida (mais recente primeiro). Com **uma** janela, o cabeçalho some e o conteúdo ocupa a tela. Com várias, cada janela é uma **seção recolhível**: cabeçalho de 52 com chevron, "Janela N" (N pela ordem) e, na linha de baixo, o título da aba ativa dela (`window.title`, 13 `text.secondary`) para o usuário reconhecer qual é; à direita a contagem de abas. Todas começam expandidas, e o estado recolhido fica na memória do app (como a expansão local de grupo, [arquitetura](../arquitetura.md) §2). Seções recolhíveis numa só rolagem, e não uma janela por vez com seletor de chips (§7, item 1).
 3. **Fixadas (RF-2.7).** Primeiro bloco da janela, com o rótulo de seção "Fixadas" (**proposta**: o desktop não rotula, mas numa lista vertical o rótulo explica por que o bloco vem separado). Abas soltas, sem grupo, com o ícone `pin` (16, `text.tertiary`) à esquerda do título.
 4. **Trilha (RF-2.7).** Grupos e abas soltas na ordem do desktop. Sem rótulo "Trilha" quando não há fixadas (o rótulo só existe para separar).
@@ -959,6 +961,47 @@ Depois de tocar em **Criar aba** o botão vira spinner até o `action-result`. C
 - Folhas tratam o gesto de escape do sistema (`Esc` em teclado físico, voltar do Android).
 - Itens destrutivos têm também o rótulo "ação destrutiva" para o leitor.
 
+#### 4.12.10 Sessões salvas (RF-4.12 a RF-4.16)
+
+> **Proposta de 2026-11-20, à espera do aval visual do dono** (§9.2). Implementação pendente. Especificação 0.6 do protocolo (`list-sessions`, `sessions`, `restore-session`).
+
+Aberta pelo `bookmark` da barra do workspace (§4.5.2, item 1). Título da folha: "Sessões salvas". A folha manda `list-sessions` ao abrir, e de novo em "Tentar de novo".
+
+```
++-----------------------------+
+|           ----              |   alça
+|  Sessões salvas             |
+|  Abre numa janela nova      |   linha de contexto (pelo mode)
+|  do desktop.                |
++-----------------------------+
+|  api + front              > |   row.single 56
+|  infra                    > |
+|  estudo rust              > |
+|  backup-antigo              |   esmaecida (readable: false)
+|  Não pode ser restaurada    |
++-----------------------------+
+|        [ Cancelar ]         |
++-----------------------------+
+```
+
+- **Linha de contexto** (13, `text.secondary`), pelo `mode` da resposta:
+  - `new-window`: "Abre numa janela nova do desktop.";
+  - `append`: "Acrescenta a uma janela do desktop.".
+- **Linha de sessão** (`row.single`, 56, `ListRow`): o nome (16/500, uma linha, reticências) e o `icon.chevron` à direita **só no `append`**, porque ele navega ao passo 2. No `new-window` o toque já restaura e a linha não tem chevron. Rótulo de leitura: o nome e, no `append`, "escolher a janela".
+- **Sessão ilegível** (`readable: false`): `row.double` (64), o nome em `text.disabled` e, na linha 2, "Não pode ser restaurada" (13, `text.tertiary`). Sem toque. Rótulo de leitura com "indisponível".
+- **Ordem:** a do desktop, a salva mais recentemente primeiro. Sem busca e sem ordenação no app.
+- **Estados:**
+  - **carregando**: spinner (`icon.spinner`) centrado no corpo, sem a linha de contexto;
+  - **vazio**: "Nenhuma sessão salva no desktop." (15, `text.secondary`) e, abaixo, "Salve uma janela no Porecatu, pelo botão de sessões da barra de abas." (13, `text.tertiary`);
+  - **falha** (sem resposta em 10 s, ou sessão caiu): "Não foi possível carregar as sessões." e o botão de texto **Tentar de novo**.
+- **Toque no `new-window`:** a linha tocada troca o chevron (ou o vazio à direita) pelo spinner, as outras ficam a `opacity.pending` e desativadas (RF-4.9), até o `action-result`. Com sucesso, a folha fecha, sem aviso: a janela nova aparece na árvore pelo `workspace`. Com erro, a folha fecha e o aviso do §4.14 aparece.
+- **Toque no `append`: passo 2, "Em qual janela?"**, na mesma folha, com voltar (`chevron-left`, `icon.bar`) no título. Subtítulo: o nome da sessão.
+  - A lista é a de **todas** as janelas, no formato do §4.12.5: título da aba ativa e "N abas", `row.double`.
+  - O toque numa janela envia `restore-session { session, window }`. A pendência fica na linha da janela tocada, e o resultado é tratado como no `new-window`.
+  - Com uma janela só, o passo 2 **existe mesmo assim** (**proposta**: o usuário vê onde as abas vão entrar antes de mandar).
+- **Depois do sucesso**, o app fica na árvore e **não** abre nada no terminal. O desktop não ativou aba nenhuma, e abrir uma aba da sessão seria escolha que o usuário não fez.
+- **Desktop reiniciado** com a folha aberta: a folha fecha, como as outras (os `session-id` mudam de sentido).
+
 ### 4.13 Confirmação de fechamento (`confirm-request`)
 
 **Objetivo.** RF-4.2: o desktop pergunta **ao celular que pediu** quando o fechamento mata algo. Diálogo central, `bg.sheet`, raio 8 (`radius.card`), largura da tela menos 48 (no máximo 360), `padding: 20`, sombra do sistema.
@@ -1000,6 +1043,8 @@ Depois de tocar em **Criar aba** o botão vira spinner até o `action-result`. C
 | `unknown-profile` | aviso | "Esse perfil não existe mais. A lista foi atualizada." |
 | `invalid-argument`, `unsupported` | aviso | "Não foi possível fazer isso (código `invalid-argument`)." com o código em mono, para relatório |
 | `last-tab` | aviso | "Não dá para fechar a última aba do desktop." **(o RF-4.10 não lista; precisa entrar no PRD-004 e no catálogo, §7 de pendências)** |
+| `unknown-session` | aviso | "Essa sessão não existe mais no desktop. Abra a lista de novo." **(proposta de 2026-11-20, §4.12.10)** |
+| `session-unreadable` | aviso | "O desktop não conseguiu ler essa sessão." **(proposta de 2026-11-20, §4.12.10)** |
 | `pane-not-running`, `not-subscribed` | aviso | "O painel não está em execução." |
 | `too-many-subscriptions` | aviso | "Não foi possível abrir este painel agora." (o app usa uma assinatura por vez; indica defeito) |
 | `protocol` | tela de estado | "Erro de comunicação com o desktop." e "Voltar à lista" |
@@ -1056,6 +1101,7 @@ Aviso de ação **pendente** não existe: o indicador de pendência (spinner na 
 | RF-4.6 | §4.12.1 |
 | RF-4.7, RF-4.8 | §4.12.6, §4.12.7, §4.12.2 |
 | RF-4.9, RF-4.10 | §4.5.2, §4.14 |
+| RF-4.12 a RF-4.16 | §4.5.2 (botão da barra), §4.12.10, §4.14 (à espera do aval) |
 
 ---
 
@@ -1249,3 +1295,16 @@ Uma linha por item: o que a anatomia diz (ou não fixa) e o que o código faz.
 | Vão entre o motivo e a lista de processos | só fixa o recuo (`dialog.list-indent`) | nenhum: a lista vem colada no motivo |
 | Prazo | barra de 2 | o texto "Restam N s para responder" (`type.secondary`, `text.tertiary`) e a barra, separados por `dialog.gap` |
 | Sobreposições da sessão quando o desktop reinicia | não diz | fecham, porque os ids antigos mudam de sentido |
+
+**Sessões salvas (§4.5.2 item 1, §4.12.10, §4.14) — tela nova, proposta em 2026-11-20, sem código ainda.** Diferente das linhas acima, aqui não há código: é a anatomia toda que espera o aval antes da implementação.
+
+| Item | Proposta | Alternativa considerada |
+|---|---|---|
+| Entrada | `bookmark` na barra do workspace, à esquerda do `search` | linha "Restaurar sessão" no fim de cada janela; seção na folha Nova aba (recusadas pelo dono em 2026-11-20) |
+| Ícone | `bookmark`, o mesmo do botão de sessões do desktop (ADR-0055 do Porecatu) | `history`, `folder-open` (recusados no desktop pelo mesmo ADR) |
+| Linha de contexto pelo `mode` | "Abre numa janela nova do desktop." / "Acrescenta a uma janela do desktop." | sem linha: o usuário descobriria o destino só no passo 2 ou na árvore |
+| Sessão ilegível | listada, esmaecida, `row.double` com "Não pode ser restaurada" | escondida (o desktop a mostra esmaecida; esconder divergiria) |
+| Chevron | só no `append`, porque há passo 2 | em todas as linhas |
+| Passo 2 com uma janela só | existe | pular direto para o envio |
+| Depois do sucesso | a folha fecha, sem aviso, e o app fica na árvore | aviso "Sessão restaurada"; abrir no terminal a aba ativa da sessão |
+| Textos | os de §4.12.10 e as duas linhas novas de §4.14 | — |

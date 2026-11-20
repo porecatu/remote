@@ -169,6 +169,37 @@ Pedido do dono em 2026-11-20: abrir uma aba no app trocava a aba ativa do deskto
 
 **Verificação prevista:** além da dívida de aparelho de sempre, conferir no desktop real o ícone de aba vista aparecendo ao abrir a aba no app, sumindo ao sair da tela e voltando depois de uma reconexão.
 
+## Especificação 0.6: restaurar sessão salva — documentada em 2026-11-20, não implementada
+
+Pedido do dono em 2026-11-20: escolher, pelo app, uma sessão nomeada do desktop e restaurá-la. Decisões no [ADR-0012 do protocolo](https://github.com/porecatu/protocol/blob/main/docs/adr/0012-sessoes-nomeadas-pelo-cliente.md) e, no Porecatu, no [ADR-0113](https://github.com/porecatu/terminal/blob/main/docs/adr/0113-restaurar-sessao-nomeada-pelo-celular.md). Requisitos RF-4.12 a RF-4.16 do [PRD-004](prd/prd-004-gestao-de-abas.md), emenda no [PRD-000](prd/prd-000-visao-de-produto.md) e a folha na [anatomia §4.12.10](design/proposta-de-anatomia.md), que **espera o aval visual do dono** (§9.2). Não há ADR novo neste repositório: o app só segue o protocolo e a anatomia.
+
+O dono decidiu:
+- o destino segue a preferência do desktop (`sessions.mode`);
+- a janela nova não toma o foco;
+- nada é ativado nem fechado;
+- só listar e restaurar;
+- entrada pelo `bookmark` da barra do workspace.
+
+**Só a documentação existe.** Etapas, na ordem de dependência:
+
+1. **Aval visual do dono** sobre a §4.12.10 (e os itens do §9.2), antes de qualquer tela.
+2. **Pacote do protocolo na 0.6** (pré-requisito externo): `vendor/porecatu-protocol-*.tgz` regerado do commit que implementar a 0.6, com `list-sessions`, `sessions`, `restore-session`, `unknown-session` e `session-unreadable` ([ADR-0004](adr/0004-criptografia-em-js-puro.md)).
+3. **Lógica:**
+   - builder `restoreSession` e `targetsOf` em `src/session/actions.ts`;
+   - controlador do pedido de lista com id, prazo de 10 s e resposta casada pelo id, no molde de `src/grid/scrollback.ts`;
+   - os dois códigos em `src/i18n/protocolMessages.ts`, com textos distintos.
+4. **Telas:**
+   - ícone `bookmark` em `ui/components/Icon.tsx`;
+   - segunda ação da barra em `ui/screens/workspace/WorkspaceScreen.tsx`;
+   - folha `ui/sheets/forms/SavedSessionsSheet.tsx` com os dois passos;
+   - textos em `locales/en_US.json` e `locales/pt_BR.json`.
+5. **`pnpm fake-host` e `pnpm real-host`:**
+   - o desktop falso responde `list-sessions` com uma lista do cenário (uma sessão ilegível inclusive), e as ações continuam `unsupported`;
+   - contra o Porecatu real, num `PORECATU_SESSION` isolado com um arquivo de sessão criado pelo teste: listar e restaurar nos dois modos, conferindo no `workspace` que o `active` das janelas que existiam não muda e que nenhuma aba some.
+6. **Docs de fechamento:** arquitetura (módulos, desktop falso, contagem de ações), PRD-004 (tabela de implementação), CHANGELOG e CLAUDE.md.
+
+**Verificação prevista:** além da dívida de aparelho de sempre, conferir no desktop real que a janela nova aparece sem tomar o foco, que o terminal parado solitário continua na janela depois do acréscimo e que o `busy` aparece com o popover de sessões aberto no desktop.
+
 ## Dívida de verificação prevista
 
 Registrada desde já, para não ser descoberta depois:
@@ -187,6 +218,6 @@ Registrada desde já, para não ser descoberta depois:
 | Notificações push | [PRD-000](prd/prd-000-visao-de-produto.md) |
 | Seleção e cópia de texto da grade | [PRD-003](prd/prd-003-terminal.md) |
 | Responder perguntas do SSH pelo celular | [PRD-000](prd/prd-000-visao-de-produto.md), [PRD-003](prd/prd-003-terminal.md) |
-| Fixar abas, sessões nomeadas, abrir janela | [PRD-004](prd/prd-004-gestao-de-abas.md) |
+| Fixar abas, salvar e excluir sessões nomeadas, abrir janela vazia (restaurar sessão entrou: seção "Especificação 0.6") | [PRD-004](prd/prd-004-gestao-de-abas.md) |
 | Código digitado no pareamento | [PRD-001](prd/prd-001-desktops-e-pareamento.md) |
 | Permissão por aparelho (somente leitura) | [PRD-001](prd/prd-001-desktops-e-pareamento.md) |

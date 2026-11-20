@@ -37,6 +37,24 @@ Acompanhar não basta: o usuário quer **abrir uma aba** para rodar um comando, 
 - **RF-4.7** **Novo grupo**: a partir do menu de uma aba ("Novo grupo com esta aba"), com nome e cor escolhida da paleta `group_colors` do `theme`; manda `new-group`.
 - **RF-4.8** No menu de um grupo: **Renomear** (`rename-group`), **Cor** (`set-group-color`, mesma paleta), **Colapsar/Expandir no desktop** (`collapse-group`), **Mover para janela** (`move-group-to-window`) e **Desfazer grupo** (`ungroup`, com confirmação no app porque o gesto é difícil de reverter).
 
+### Sessões salvas
+
+> **Acrescentado em 2026-11-20** (especificação 0.6 do protocolo, [ADR-0012 do protocolo](https://github.com/porecatu/protocol/blob/main/docs/adr/0012-sessoes-nomeadas-pelo-cliente.md); no desktop, [ADR-0113](https://github.com/porecatu/terminal/blob/main/docs/adr/0113-restaurar-sessao-nomeada-pelo-celular.md)). **Implementação pendente.** O dono decidiu quatro coisas: o destino segue a preferência do desktop; a janela nova nasce sem foco; nada é ativado nem fechado; e o app só lista e restaura, sem salvar nem excluir. A anatomia da folha está na [§4.12.10](../design/proposta-de-anatomia.md) e espera o aval visual do dono.
+
+- **RF-4.12** **Sessões salvas**: um botão na barra do workspace, ao lado da busca, abre a folha "Sessões salvas". A folha pede a lista ao desktop (`list-sessions`) **cada vez que abre** e mostra as sessões na ordem do desktop, a salva mais recentemente primeiro. O app não guarda a lista entre aberturas nem entre sessões: o `session-id` só vale com o mesmo `host_instance`.
+- **RF-4.13** Enquanto a resposta não chega, a folha mostra um indicador de carregamento. Sem resposta em 10 s, mostra uma falha com **Tentar de novo**. Lista vazia é um estado próprio ("Nenhuma sessão salva no desktop"), não erro. Uma sessão com `readable: false` aparece esmaecida, com a nota de que não pode ser restaurada, e não aceita toque.
+- **RF-4.14** **Restaurar** é o toque numa sessão. O que acontece depende de `sessions.mode`, que a folha também mostra numa linha de contexto:
+  - **`new-window`**: o app manda `restore-session { session }` na hora. O desktop abre uma janela nova, que não toma o foco do computador.
+  - **`append`**: a folha passa a um segundo passo, "Em qual janela?", com **todas** as janelas do desktop, identificadas como no "Mover para janela" (título da aba ativa e contagem de abas). Escolhida a janela, o app manda `restore-session { session, window }`. O desktop acrescenta os grupos e as abas da sessão ao fim dela.
+
+  Nos dois casos o desktop não ativa aba nenhuma e não fecha nada. O app **não** abre nada no terminal depois: o resultado aparece na árvore pelo `workspace`.
+- **RF-4.15** Depois do toque, a linha mostra a pendência (RF-4.9) até o `action-result`, e as outras linhas ficam desabilitadas. Com sucesso, a folha fecha. Com erro, a folha fecha e o aviso do catálogo aparece (RF-4.10), com dois códigos novos:
+  - `unknown-session`: a sessão não existe mais no desktop. O aviso sugere abrir a lista de novo;
+  - `session-unreadable`: o desktop não conseguiu ler a sessão.
+
+  Um `invalid-argument` em resposta a um `restore-session` sem janela significa que a preferência mudou no desktop depois da lista. O aviso é o genérico, e a próxima abertura da folha já traz o `mode` novo.
+- **RF-4.16** **Salvar** a janela como sessão e **excluir** uma sessão salva **não** existem no app: são gestos só do desktop.
+
 ### Resultado e erros
 
 - **RF-4.9** Enquanto a ação não tem `action-result`, o item afetado mostra um indicador de pendência e não aceita outra ação.
@@ -69,7 +87,7 @@ Decisões tomadas na implementação:
 
 ## Fora de escopo
 
-- Fixar e desafixar, sessões nomeadas, destacar aba numa janela nova, abrir janela nova.
+- Fixar e desafixar, salvar e excluir sessões nomeadas, destacar aba numa janela nova, abrir janela vazia. (Restaurar uma sessão nomeada entrou em 2026-11-20, RF-4.12 a RF-4.16, e é o único jeito de o app fazer o desktop abrir uma janela.)
 - Reordenar abas e grupos por arraste dentro da trilha.
 - Seleção múltipla de abas.
 - Mudar o painel focado de uma aba ou dar foco a uma janela do sistema do desktop. (A aba ativa mudou na especificação 0.4, pelas ações e ao abrir uma aba no terminal; desde a 0.5 volta a ficar fora: [ADR-0012](../adr/0012-abrir-aba-nao-muda-o-desktop.md).)
