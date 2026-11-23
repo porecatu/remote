@@ -1381,7 +1381,7 @@ packages:
     engines: {node: ^14.18.0 || >=16.0.0}
 
   '@porecatu/protocol@file:vendor/porecatu-protocol-0.1.0.tgz':
-    resolution: {integrity: sha512-LJvk9xmmPmlASDFLBLMO/Acvel/eKOWr7q3phJyUIgdSppPtxeDnX7Zd5v920IsGuvqYJsTYVq1HjBnac3ALJA==, tarball: file:vendor/porecatu-protocol-0.1.0.tgz}
+    resolution: {integrity: sha512-aUKnTRE0JhB65cP5sLz36lE6GHh7Qz0yoHu8+Ppu9RYbJ39k7whep3EX83CLogDCeg113/2qK+BjZAk4qUvHGg==, tarball: file:vendor/porecatu-protocol-0.1.0.tgz}
     version: 0.1.0
     engines: {node: '>=26.13.0'}
 

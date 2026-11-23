@@ -36,11 +36,19 @@ function wrap(id: RequestId, body: ActionBody): Action {
 }
 
 export interface NewTabOptions {
-  readonly group?: GroupId;
+  /**
+   * Absent: the desktop picks the place (the group of its active tab). A group
+   * id: the end of that group. `null`: a loose tab, outside any group, at the
+   * end of the track (spec 0.7).
+   */
+  readonly group?: GroupId | null;
   readonly profile?: ProfileId;
 }
 
-/** `new-tab`: without `group` the desktop picks the place; with it, the end of the group. */
+/**
+ * `new-tab`: without `group` the desktop picks the place; with an id, the end
+ * of the group; with `null`, a loose tab at the end of the track.
+ */
 export function newTab(id: RequestId, window: WindowId, options: NewTabOptions = {}): Action {
   return wrap(id, {
     type: "new-tab",
@@ -132,14 +140,15 @@ export function restoreSession(id: RequestId, session: SessionId, window?: Windo
 /**
  * The items an action affects, which show a pending indicator and refuse
  * another action until the `action-result` (RF-4.9). `new-tab` marks the group
- * when there is one, the window otherwise; moves mark only the moved item;
+ * when there is one, the window otherwise (a loose `null` tab included); moves
+ * mark only the moved item;
  * `restore-session` marks the window it appends to, and nothing when it opens
  * a new one.
  */
 export function targetsOf(body: ActionBody): readonly ItemRef[] {
   switch (body.type) {
     case "new-tab":
-      return body.group !== undefined
+      return body.group !== undefined && body.group !== null
         ? [{ kind: "group", id: body.group }]
         : [{ kind: "window", id: body.window }];
     case "close-tab":

@@ -33,6 +33,8 @@ describe("action builders", () => {
   const all: readonly Action[] = [
     newTab(1, 10),
     newTab(2, 10, { group: 3, profile: "auto:wsl" }),
+    newTab(21, 10, { group: null }),
+    newTab(22, 10, { group: null, profile: "auto:wsl" }),
     closeTab(3, 20),
     closePane(4, 30),
     renameTab(5, 20, "build"),
@@ -63,6 +65,8 @@ describe("action builders", () => {
 
   it("carries the request id and the body", () => {
     expect(newTab(42, 1)).toEqual({ type: "action", id: 42, do: { type: "new-tab", window: 1 } });
+    // `null` is a loose tab and has to reach the wire (absent means something else).
+    expect(newTab(43, 1, { group: null }).do).toEqual({ type: "new-tab", window: 1, group: null });
     expect(renameTab(1, 2, null).do).toEqual({ type: "rename-tab", tab: 2, title: null });
     expect(moveTabToGroup(1, 2, null).do).toEqual({
       type: "move-tab-to-group",
@@ -125,6 +129,7 @@ describe("targetsOf", () => {
   it("marks the group of new-tab when there is one, the window otherwise", () => {
     expect(keys(newTab(1, 2))).toEqual(["window:2"]);
     expect(keys(newTab(1, 2, { group: 8 }))).toEqual(["group:8"]);
+    expect(keys(newTab(1, 2, { group: null }))).toEqual(["window:2"]);
   });
 
   it("marks the window restore-session appends to, and nothing for a new window", () => {

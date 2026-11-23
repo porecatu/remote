@@ -6,8 +6,10 @@
 // "Default" mark; the default comes first and starts chosen) and the primary
 // "Create tab" button fixed at the end. Without `profiles` yet, a spinner.
 //
-// "Create tab" sends `new-tab` with the chosen profile and, from a group, the
-// group (the tab is born at its end). The button turns into a spinner until
+// "Create tab" sends `new-tab` with the chosen profile and the group: from a
+// group, its id (the tab is born at its end); from the window row, `null` (a
+// loose tab at the end of the track, whatever the group of the desktop's
+// active tab). The button turns into a spinner until
 // the `action-result`, and the sheet closes when it comes; opening the new tab
 // in the app (on `created`) and the error snackbar are handled centrally. The
 // button also waits while another action on the window or group is pending
@@ -171,7 +173,7 @@ export function NewTabSheet({ session, windowId, groupId, close }: NewTabSheetPr
       return;
     }
     const result = sendOrWarn(session, overlay, tr, (id) =>
-      newTab(id, windowId, { profile: selected, ...(groupId === undefined ? {} : { group: groupId }) }),
+      newTab(id, windowId, { profile: selected, group: groupId ?? null }),
     );
     if (result.ok) {
       setCreating(result.id);

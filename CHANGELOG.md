@@ -8,12 +8,16 @@ primeira versão publicada nas lojas.
 
 Implementação inicial: a camada de lógica (2026-11-16) e as telas dos PRDs 001
 a 004 (2026-11-17), conforme a [anatomia das telas](docs/design/proposta-de-anatomia.md)
-aprovada. O app segue a **especificação 0.6** do protocolo. Tudo o que entrou é
+aprovada. O app segue a **especificação 0.7** do protocolo. Tudo o que entrou é
 verificado por teste automatizado em Node (`pnpm test`: 1680 testes em 130
 suítes, com `jest-expo` e `@testing-library/react-native`); **nada foi rodado
 num aparelho**, e o [ADR-0002](docs/adr/0002-render-da-grade-com-skia.md) segue
 Proposto até a medição do render em aparelho. Dívida de verificação no
 [roadmap](docs/roadmap.md).
+
+### Corrigido
+
+- **Nova aba solta nascia no grupo da aba ativa** (2026-11-23): a linha "Nova aba" da janela mandava `new-tab` sem `group`, que o desktop lê como "onde o `tab.new` criaria", isto é, no grupo da aba ativa (o último grupo da lista, quando era ele). A folha passa a mandar `group: null`, que a especificação 0.7 do protocolo ([ADR-0013 do protocolo](https://github.com/porecatu/protocol/blob/main/docs/adr/0013-nova-aba-solta.md)) define como aba solta, no fim da trilha; da linha de um grupo, continua o id do grupo. O `@porecatu/protocol` regerado do commit `76174da` e o host precisam ser da 0.7: um host 0.6 recusaria o `null`. Verificado só por teste automatizado em Node; o caso novo do `pnpm real-host` ainda não rodou.
 
 ### Adicionado
 

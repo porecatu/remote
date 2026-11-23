@@ -505,6 +505,13 @@ describe("against a real Porecatu and relay", () => {
     const inGroupId = inGroup.status === "created-tab" || inGroup.status === "waiting-tab" ? inGroup.tab : 0;
     await waitFor(() => tabById(inGroupId)?.group?.name === "Build", "the tab inside Build");
 
+    // `group: null` (spec 0.7) is a loose tab: outside any group, whatever the group of the active tab.
+    const loose = await actOk((id) => newTab(id, window, { group: null }), "new-tab loose");
+    const looseId = loose.status === "created-tab" || loose.status === "waiting-tab" ? loose.tab : 0;
+    await waitFor(() => tabById(looseId), "the loose tab in the workspace");
+    expect(tabById(looseId)?.group ?? null).toBeNull();
+    expect(windowOf(window)?.active).toBe(activeBeforeNewTab);
+
     await actOk((id) => newGroup(id, [newId], "Grupo novo", 2), "new-group");
     const fresh = await waitFor(() => groupByName("Grupo novo"), "the new group");
     expect(fresh.group.color).toBe(2);

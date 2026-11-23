@@ -24,6 +24,8 @@ O app poderia reimplementar partes (é tentador escrever "só o CBOR" ou "só o 
 
 > **Nota de implementação (2026-11-20, de novo):** regerado para a especificação 0.6 ([ADR-0012 do protocolo](https://github.com/porecatu/protocol/blob/main/docs/adr/0012-sessoes-nomeadas-pelo-cliente.md)), a partir do commit `a52fbb1` da `main` do protocolo: entram `list-sessions`, `sessions`, a ação `restore-session` e os códigos 17 e 18, e o mapa de ações passa a `ActionCode`. Mesmo nome e mesma versão; só a integridade do `pnpm-lock.yaml` muda.
 
+> **Nota de implementação (2026-11-23, de novo):** regerado para a especificação 0.7 ([ADR-0013 do protocolo](https://github.com/porecatu/protocol/blob/main/docs/adr/0013-nova-aba-solta.md)), a partir do commit `76174da` da `main` do protocolo: `new-tab` aceita `group: null` (aba solta). Mesmo nome e mesma versão; só a integridade do `pnpm-lock.yaml` muda.
+
 1. **Nenhuma codificação ou criptografia escrita no app.** O app chama o cliente do pacote (conectar, parear, mandar, receber) e trata mensagens tipadas.
 2. **JS puro** porque roda igual no Hermes dos dois sistemas, no Node dos testes e no CI, sem *prebuild* nem compilação nativa, e porque as bibliotecas `@noble` são auditadas e sem dependências.
 3. **Aleatoriedade** vem de `crypto.getRandomValues`, fornecido no Hermes por `expo-crypto` (polyfill oficial); o app instala o polyfill na entrada, antes de qualquer import do pacote.

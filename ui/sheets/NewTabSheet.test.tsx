@@ -101,7 +101,9 @@ describe("NewTabSheet", () => {
 
     await fireEvent.press(screen.getByTestId("new-tab-create"));
 
-    expect(fake.sent).toEqual([newTab(1, 1, { profile: "shell" })]);
+    // From the window row the tab is loose: `group: null`, not an absent group
+    // (which would put it in the group of the desktop's active tab).
+    expect(fake.sent).toEqual([newTab(1, 1, { profile: "shell", group: null })]);
     expect(screen.getByTestId("new-tab-create").props.accessibilityState).toMatchObject({ busy: true });
     expect(screen.getByTestId("new-tab-sheet")).toBeTruthy();
 
