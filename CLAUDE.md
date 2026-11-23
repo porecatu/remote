@@ -154,6 +154,7 @@ Correção de erro factual ou de clareza é permitida; mudança de decisão, nã
 - [docs/prd/](docs/prd/prd-000-visao-de-produto.md) — requisitos de produto (000 a 004)
 - [docs/arquitetura.md](docs/arquitetura.md) — camadas, mapa de módulos, modelo de estado, threads, telas
 - [docs/adr/](docs/adr/0000-template.md) — decisões arquiteturais
+- [docs/build-local-android.md](docs/build-local-android.md) — build local do Android (AAB/APK) assinado com o keystore do EAS, no Windows
 - [docs/roadmap.md](docs/roadmap.md) — marcos e dívida de verificação
 - [CHANGELOG.md](CHANGELOG.md) — o que entrou
 - [docs/design/](docs/design/README.md) — registro visual; a [anatomia das telas](docs/design/proposta-de-anatomia.md), aprovada

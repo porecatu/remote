@@ -31,7 +31,7 @@ const config: ExpoConfig = {
     },
     // The static key lives in the Keystore (ADR-0003); never back it up.
     allowBackup: false,
-	versionCode: 2,
+	versionCode: 3,
     // expo-screen-capture declares these in its own manifest for its screenshot
     // listener, which the app never uses (only FLAG_SECURE, via
     // preventScreenCaptureAsync). Play policy restricts READ_MEDIA_IMAGES, and

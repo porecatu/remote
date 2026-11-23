@@ -45,6 +45,7 @@ O app roda só em *development build* (nunca no Expo Go); os comandos completos 
 - [Visão de produto](docs/prd/prd-000-visao-de-produto.md) e os demais [PRDs](docs/prd/)
 - [Arquitetura](docs/arquitetura.md)
 - [Decisões arquiteturais (ADRs)](docs/adr/0000-template.md)
+- [Build local do Android](docs/build-local-android.md)
 - [Roadmap](docs/roadmap.md) e [CHANGELOG](CHANGELOG.md)
 - [Design](docs/design/README.md)
 - [Guia operacional para quem mexe no código](CLAUDE.md)
